@@ -1,0 +1,34 @@
+{
+  "sources": [
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/servo",
+      "prefix": "modular_networks:block/duct/attachment/servo/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/filter",
+      "prefix": "modular_networks:block/duct/attachment/filter/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/retriever",
+      "prefix": "modular_networks:block/duct/attachment/retriever/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/cover",
+      "prefix": "modular_networks:block/duct/attachment/cover/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/base",
+      "prefix": "modular_networks:block/duct/base/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/connection",
+      "prefix": "modular_networks:block/duct/connection/"
+    }
+  ]
+}

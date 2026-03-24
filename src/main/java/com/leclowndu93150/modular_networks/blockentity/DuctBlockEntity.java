@@ -1,0 +1,220 @@
+package com.leclowndu93150.modular_networks.blockentity;
+
+import com.leclowndu93150.modular_networks.core.attachment.Attachment;
+import com.leclowndu93150.modular_networks.core.attachment.AttachmentRegistry;
+import com.leclowndu93150.modular_networks.core.duct.DuctToken;
+import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
+import com.leclowndu93150.modular_networks.core.network.ConnectionType;
+import com.leclowndu93150.modular_networks.core.network.NetworkManager;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.EnumMap;
+import java.util.Map;
+
+public abstract class DuctBlockEntity extends BlockEntity {
+
+    protected final Map<DuctToken, DuctUnit<?, ?, ?>> ductUnits = new EnumMap<>(DuctToken.class);
+    protected final ConnectionType[] connectionTypes = new ConnectionType[6];
+    protected final Attachment[] attachments = new Attachment[6];
+
+    protected DuctBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
+        for (int i = 0; i < 6; i++) {
+            connectionTypes[i] = ConnectionType.NORMAL;
+        }
+    }
+
+    protected abstract void initDuctUnits();
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, DuctBlockEntity be) {
+        for (Attachment att : be.attachments) {
+            if (att != null) {
+                att.tick();
+            }
+        }
+    }
+
+    protected void addDuctUnit(DuctUnit<?, ?, ?> unit) {
+        ductUnits.put(unit.getToken(), unit);
+    }
+
+    public DuctUnit<?, ?, ?> getDuctUnit(DuctToken token) {
+        return ductUnits.get(token);
+    }
+
+    public Map<DuctToken, DuctUnit<?, ?, ?>> getDuctUnits() {
+        return ductUnits;
+    }
+
+    public ConnectionType getConnectionType(Direction side) {
+        return connectionTypes[side.ordinal()];
+    }
+
+    public void setConnectionType(Direction side, ConnectionType type) {
+        connectionTypes[side.ordinal()] = type;
+        onNeighborChanged();
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public Attachment[] getAttachments() {
+        return attachments;
+    }
+
+    public Attachment getAttachment(Direction side) {
+        return attachments[side.ordinal()];
+    }
+
+    public void setAttachment(Direction side, Attachment attachment) {
+        attachments[side.ordinal()] = attachment;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public void removeAttachment(Direction side) {
+        attachments[side.ordinal()] = null;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public void onPlaced() {
+        if (level instanceof ServerLevel serverLevel) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+    }
+
+    public void onBroken() {
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.invalidate();
+        }
+    }
+
+    public void onNeighborChanged() {
+        if (level instanceof ServerLevel serverLevel) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                if (unit.getGrid() != null) {
+                    unit.getGrid().markForRecreation();
+                }
+                unit.invalidate();
+                unit.updateCaches();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+            level.invalidateCapabilities(worldPosition);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.invalidate();
+        }
+        super.setRemoved();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.invalidate();
+        }
+        super.onChunkUnloaded();
+    }
+
+    @Override
+    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
+
+        byte[] connections = new byte[6];
+        for (int i = 0; i < 6; i++) {
+            connections[i] = (byte) connectionTypes[i].ordinal();
+        }
+        tag.putByteArray("Connections", connections);
+
+        for (var entry : ductUnits.entrySet()) {
+            CompoundTag unitTag = new CompoundTag();
+            entry.getValue().saveAdditional(unitTag, registries);
+            if (!unitTag.isEmpty()) {
+                tag.put("Unit_" + entry.getKey().name(), unitTag);
+            }
+        }
+
+        ListTag attachmentList = new ListTag();
+        for (int i = 0; i < 6; i++) {
+            if (attachments[i] != null) {
+                attachmentList.add(attachments[i].save(registries));
+            } else {
+                attachmentList.add(new CompoundTag());
+            }
+        }
+        tag.put("Attachments", attachmentList);
+    }
+
+    @Override
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+
+        if (tag.contains("Connections")) {
+            byte[] connections = tag.getByteArray("Connections");
+            for (int i = 0; i < Math.min(6, connections.length); i++) {
+                connectionTypes[i] = ConnectionType.values()[connections[i]];
+            }
+        }
+
+        for (var entry : ductUnits.entrySet()) {
+            String key = "Unit_" + entry.getKey().name();
+            if (tag.contains(key)) {
+                entry.getValue().loadAdditional(tag.getCompound(key), registries);
+            }
+        }
+
+        if (tag.contains("Attachments")) {
+            ListTag attachmentList = tag.getList("Attachments", Tag.TAG_COMPOUND);
+            for (int i = 0; i < Math.min(6, attachmentList.size()); i++) {
+                CompoundTag attTag = attachmentList.getCompound(i);
+                if (attTag.isEmpty() || !attTag.contains("Id")) {
+                    attachments[i] = null;
+                } else {
+                    ResourceLocation id = ResourceLocation.parse(attTag.getString("Id"));
+                    attachments[i] = AttachmentRegistry.create(id, this, Direction.values()[i], attTag);
+                    if (attachments[i] != null) {
+                        attachments[i].load(attTag, registries);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = new CompoundTag();
+        saveAdditional(tag, registries);
+        return tag;
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+}
