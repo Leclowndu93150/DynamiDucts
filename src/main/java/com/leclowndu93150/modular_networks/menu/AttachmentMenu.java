@@ -8,6 +8,7 @@ import com.leclowndu93150.modular_networks.core.attachment.Attachment;
 import com.leclowndu93150.modular_networks.core.attachment.AttachmentTier;
 import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
 import com.leclowndu93150.modular_networks.core.attachment.FilterLogic;
+import com.leclowndu93150.modular_networks.core.attachment.RedstoneMode;
 import com.leclowndu93150.modular_networks.init.MNMenuTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -33,6 +34,7 @@ public class AttachmentMenu extends AbstractContainerMenu {
     private final ConnectionBase attachment;
     private final FilterLogic filter;
     private final ContainerData data;
+    private final int[] values = new int[6];
 
     public final int gridWidth;
     public final int gridHeight;
@@ -46,27 +48,35 @@ public class AttachmentMenu extends AbstractContainerMenu {
         this.side = side;
         this.attachment = attachment;
         this.filter = attachment.getFilter();
+        syncValues();
 
         this.data = new ContainerData() {
             @Override
             public int get(int index) {
-                return switch (index) {
-                    case 0 -> filter.isWhitelist() ? 1 : 0;
-                    case 1 -> filter.isMatchComponents() ? 1 : 0;
-                    case 2 -> filter.isMatchModId() ? 1 : 0;
-                    case 3 -> attachment.getRedstoneMode().ordinal();
-                    case 4 -> filter.getMaxStock();
-                    default -> 0;
-                };
+                return index >= 0 && index < values.length ? values[index] : 0;
             }
 
             @Override
             public void set(int index, int value) {
+                if (index < 0 || index >= values.length) {
+                    return;
+                }
+                values[index] = value;
+                switch (index) {
+                    case 0 -> filter.setWhitelist(value == 1);
+                    case 1 -> filter.setMatchComponents(value == 1);
+                    case 2 -> filter.setMatchModId(value == 1);
+                    case 3 -> attachment.setRedstoneMode(RedstoneMode.values()[value]);
+                    case 4 -> filter.setMaxStock(value);
+                    case 5 -> filter.setRouteType(value);
+                    default -> {
+                    }
+                }
             }
 
             @Override
             public int getCount() {
-                return 5;
+                return values.length;
             }
         };
         addDataSlots(this.data);
@@ -95,6 +105,12 @@ public class AttachmentMenu extends AbstractContainerMenu {
         }
 
         addPlayerInventory(playerInv);
+    }
+
+    @Override
+    public void broadcastChanges() {
+        syncValues();
+        super.broadcastChanges();
     }
 
     public static AttachmentMenu fromNetwork(int containerId, Inventory playerInv, FriendlyByteBuf buf) {
@@ -200,5 +216,38 @@ public class AttachmentMenu extends AbstractContainerMenu {
 
     public int getMaxStock() {
         return data.get(4);
+    }
+
+    public int getRouteType() {
+        return data.get(5);
+    }
+
+    public void setLocalWhitelist(boolean whitelist) {
+        data.set(0, whitelist ? 1 : 0);
+    }
+
+    public void setLocalMatchComponents(boolean matchComponents) {
+        data.set(1, matchComponents ? 1 : 0);
+    }
+
+    public void setLocalMatchModId(boolean matchModId) {
+        data.set(2, matchModId ? 1 : 0);
+    }
+
+    public void setLocalMaxStock(int maxStock) {
+        data.set(4, maxStock);
+    }
+
+    public void setLocalRouteType(int routeType) {
+        data.set(5, routeType);
+    }
+
+    private void syncValues() {
+        values[0] = filter.isWhitelist() ? 1 : 0;
+        values[1] = filter.isMatchComponents() ? 1 : 0;
+        values[2] = filter.isMatchModId() ? 1 : 0;
+        values[3] = attachment.getRedstoneMode().ordinal();
+        values[4] = filter.getMaxStock();
+        values[5] = filter.getRouteType();
     }
 }

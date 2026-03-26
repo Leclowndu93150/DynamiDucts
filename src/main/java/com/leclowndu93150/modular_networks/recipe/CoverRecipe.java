@@ -1,8 +1,8 @@
 package com.leclowndu93150.modular_networks.recipe;
 
 import com.leclowndu93150.modular_networks.init.MNBlocks;
-import com.leclowndu93150.modular_networks.init.MNItems;
 import com.leclowndu93150.modular_networks.init.MNRecipeSerializers;
+import com.leclowndu93150.modular_networks.item.CoverItem;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.BlockItem;
@@ -33,8 +33,8 @@ public class CoverRecipe extends CustomRecipe {
             if (stack.is(MNBlocks.STRUCTURAL_DUCT.asItem())) {
                 if (hasStructural) return false;
                 hasStructural = true;
-            } else if (stack.getItem() instanceof BlockItem) {
-                if (hasBlock) return false;
+            } else if (stack.getItem() instanceof BlockItem blockItem) {
+                if (hasBlock || !CoverItem.isValidCoverState(blockItem.getBlock().defaultBlockState())) return false;
                 hasBlock = true;
             } else {
                 return false;
@@ -45,7 +45,13 @@ public class CoverRecipe extends CustomRecipe {
 
     @Override
     public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
-        return new ItemStack(MNItems.COVER.get(), 6);
+        for (int i = 0; i < input.size(); i++) {
+            ItemStack stack = input.getItem(i);
+            if (stack.getItem() instanceof BlockItem blockItem && !stack.is(MNBlocks.STRUCTURAL_DUCT.asItem())) {
+                return CoverItem.createForState(blockItem.getBlock().defaultBlockState());
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     @Override

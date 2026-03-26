@@ -25,6 +25,7 @@ public record AttachmentConfigPayload(
     public static final int ACTION_TOGGLE_MATCH_MOD = 2;
     public static final int ACTION_SET_REDSTONE_MODE = 3;
     public static final int ACTION_SET_MAX_STOCK = 4;
+    public static final int ACTION_SET_ROUTE_TYPE = 5;
 
     public static final Type<AttachmentConfigPayload> TYPE = new Type<>(
             ResourceLocation.fromNamespaceAndPath(ModularNetworks.MODID, "attachment_config"));
@@ -62,8 +63,10 @@ public record AttachmentConfigPayload(
                         case ACTION_TOGGLE_MATCH_MOD -> conn.getFilter().setMatchModId(!conn.getFilter().isMatchModId());
                         case ACTION_SET_REDSTONE_MODE -> conn.setRedstoneMode(RedstoneMode.values()[payload.value]);
                         case ACTION_SET_MAX_STOCK -> conn.getFilter().setMaxStock(payload.value);
+                        case ACTION_SET_ROUTE_TYPE -> conn.getFilter().setRouteType(payload.value);
                     }
                     ductBE.setChanged();
+                    player.level().sendBlockUpdated(payload.pos, ductBE.getBlockState(), ductBE.getBlockState(), 3);
                 }
             }
         });

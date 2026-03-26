@@ -13,7 +13,8 @@ import java.util.LinkedList;
 public class DuctModels {
 
     private static final float W = 0.1875F;
-    private static final float INNER_SCALE = 0.9F;
+    private static final float SMALL_INNER_SCALE = 0.99F;
+    private static final float LARGE_INNER_SCALE = 0.99F;
     private static final double RENDER_OFFSET = 1.0 / 1024.0;
 
     public static CCModel modelCenter;
@@ -21,6 +22,13 @@ public class DuctModels {
     public static CCModel[] modelOpaqueTubes;
     public static CCModel[] modelTransTubes;
     public static CCModel[] modelFluidTubes;
+    public static CCModel[] modelLargeTubes;
+    public static CCModel[] modelFrameConnection;
+    public static CCModel[] modelFrame;
+    public static CCModel[] modelTransportConnection;
+    public static CCModel[] modelTransport;
+    public static CCModel[] modelSideTubes;
+    public static CCModel[] modelSideTubesInner;
 
     private static boolean initialized = false;
 
@@ -32,6 +40,7 @@ public class DuctModels {
             generateCenter();
             generateConnections();
             generateTubes();
+            generateFrames();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate duct models.", e);
         }
@@ -74,7 +83,6 @@ public class DuctModels {
             }
         }
 
-        // Attachment faces need to render from both sides when viewed from inside the duct.
         for (int type = 1; type <= 2; type++) {
             for (int side = 0; side < 6; side++) {
                 modelConnection[type][side] = modelConnection[type][side].twoFacedCopy();
@@ -85,7 +93,17 @@ public class DuctModels {
     private static void generateTubes() {
         modelOpaqueTubes = genTubeModels(W, true);
         modelTransTubes = genTubeModels(W, false);
-        modelFluidTubes = genTubeModels(W * INNER_SCALE, false);
+        modelFluidTubes = genTubeModels(W * SMALL_INNER_SCALE, false);
+        modelLargeTubes = genTubeModels(0.21875F, true);
+    }
+
+    private static void generateFrames() {
+        modelFrameConnection = new DuctModelHelper.OctagonalTubeGen(0.375, 0.1812, true).generateModels();
+        modelFrame = new DuctModelHelper.OctagonalTubeGen(0.375 * LARGE_INNER_SCALE, 0.1812, false).generateModels();
+        modelTransportConnection = new DuctModelHelper.OctagonalTubeGen(0.5 * LARGE_INNER_SCALE, 0.1812, true).generateModels();
+        modelTransport = new DuctModelHelper.OctagonalTubeGen(0.5 * LARGE_INNER_SCALE * LARGE_INNER_SCALE, 0.1812, false).generateModels();
+        modelSideTubes = new DuctModelHelper.SideTubeGen(W + 1.0E-4).generateModels();
+        modelSideTubesInner = new DuctModelHelper.SideTubeGen(W + 1.0E-4).contract(0.999).generateModels();
     }
 
     private static CCModel[] genTubeModels(float w, boolean opaque) {
@@ -110,7 +128,8 @@ public class DuctModels {
                         }
                     }
                 } else {
-                    int singleIdx = -1, doubleIdx = -1;
+                    int singleIdx = -1;
+                    int doubleIdx = -1;
                     for (int i : orthogs[side]) {
                         if ((mask & (1 << i)) != 0) {
                             singleIdx = i;

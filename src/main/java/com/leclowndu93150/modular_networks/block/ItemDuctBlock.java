@@ -36,6 +36,10 @@ public class ItemDuctBlock extends DuctBlock {
         return tokens;
     }
 
+    public ItemDuctBlockEntity.Tier getTier() {
+        return tier;
+    }
+
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return tier.createBlockEntity(pos, state, opaque);

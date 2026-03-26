@@ -1,6 +1,7 @@
 package com.leclowndu93150.modular_networks.block;
 
 import com.leclowndu93150.modular_networks.attachment.relay.Relay;
+import com.leclowndu93150.modular_networks.attachment.cover.Cover;
 import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.attachment.Attachment;
 import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
@@ -102,7 +103,12 @@ public abstract class DuctBlock extends Block implements EntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE_CACHE[getShapeIndex(state)];
+        return getMultipartShape(state, level, pos);
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getMultipartShape(state, level, pos);
     }
 
     private int getShapeIndex(BlockState state) {
@@ -115,21 +121,28 @@ public abstract class DuctBlock extends Block implements EntityBlock {
         return index;
     }
 
+    private VoxelShape getMultipartShape(BlockState state, BlockGetter level, BlockPos pos) {
+        VoxelShape shape = SHAPE_CACHE[getShapeIndex(state)];
+        if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
+            for (Direction dir : Direction.values()) {
+                if (ductBE.getAttachment(dir) instanceof Cover) {
+                    shape = Shapes.or(shape, DuctHitHelper.coverShape(dir));
+                }
+            }
+        }
+        return shape;
+    }
+
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
-        BlockState state = defaultBlockState();
-
-        for (Direction dir : Direction.values()) {
-            state = state.setValue(PROPERTY_BY_DIRECTION.get(dir), canConnectTo(level, pos, dir));
-        }
-        return state;
+        return updateVisualConnections(level, pos, defaultBlockState());
     }
 
     @Override
     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        return state.setValue(PROPERTY_BY_DIRECTION.get(direction), canConnectTo(level, pos, direction));
+        return state.setValue(PROPERTY_BY_DIRECTION.get(direction), canRenderConnection(level, pos, direction));
     }
 
     protected boolean canConnectTo(LevelAccessor level, BlockPos pos, Direction direction) {
@@ -148,6 +161,20 @@ public abstract class DuctBlock extends Block implements EntityBlock {
         return canConnectToExternal(level, pos, direction, neighborPos);
     }
 
+    protected boolean canRenderConnection(LevelAccessor level, BlockPos pos, Direction direction) {
+        if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE && !ductBE.getConnectionType(direction).allowsTransfer()) {
+            return false;
+        }
+        return canConnectTo(level, pos, direction);
+    }
+
+    public BlockState updateVisualConnections(LevelAccessor level, BlockPos pos, BlockState state) {
+        for (Direction dir : Direction.values()) {
+            state = state.setValue(PROPERTY_BY_DIRECTION.get(dir), canRenderConnection(level, pos, dir));
+        }
+        return state;
+    }
+
     protected boolean hasCompatibleToken(DuctBlock other) {
         for (DuctToken myToken : getDuctTokens()) {
             for (DuctToken otherToken : other.getDuctTokens()) {
@@ -164,13 +191,10 @@ public abstract class DuctBlock extends Block implements EntityBlock {
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         if (!level.isClientSide) {
-            for (Direction dir : Direction.values()) {
-                boolean connected = canConnectTo(level, pos, dir);
-                if (state.getValue(PROPERTY_BY_DIRECTION.get(dir)) != connected) {
-                    state = state.setValue(PROPERTY_BY_DIRECTION.get(dir), connected);
-                }
+            BlockState updatedState = updateVisualConnections(level, pos, state);
+            if (updatedState != state) {
+                level.setBlock(pos, updatedState, Block.UPDATE_CLIENTS);
             }
-            level.setBlock(pos, state, Block.UPDATE_CLIENTS);
 
             if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
                 ductBE.onNeighborChanged();

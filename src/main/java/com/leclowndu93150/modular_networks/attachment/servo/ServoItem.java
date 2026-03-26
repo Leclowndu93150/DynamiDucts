@@ -51,7 +51,7 @@ public class ServoItem extends ConnectionBase {
         );
         if (source == null) return;
 
-        int maxStack = tier.stackSize();
+        int maxStack = filter.getMaxStockOrDefault(tier.stackSize());
 
         for (int slot = 0; slot < source.getSlots(); slot++) {
             ItemStack extracted = source.extractItem(slot, maxStack, true);

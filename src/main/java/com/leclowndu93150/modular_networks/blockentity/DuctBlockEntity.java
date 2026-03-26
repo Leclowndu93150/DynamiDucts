@@ -1,5 +1,6 @@
 package com.leclowndu93150.modular_networks.blockentity;
 
+import com.leclowndu93150.modular_networks.block.DuctBlock;
 import com.leclowndu93150.modular_networks.core.attachment.Attachment;
 import com.leclowndu93150.modular_networks.core.attachment.AttachmentRegistry;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
@@ -18,6 +19,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -69,6 +71,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
         onNeighborChanged();
         setChanged();
         if (level != null && !level.isClientSide) {
+            refreshVisualState();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
@@ -85,6 +88,8 @@ public abstract class DuctBlockEntity extends BlockEntity {
         attachments[side.ordinal()] = attachment;
         setChanged();
         if (level != null && !level.isClientSide) {
+            onNeighborChanged();
+            refreshVisualState();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
@@ -93,6 +98,8 @@ public abstract class DuctBlockEntity extends BlockEntity {
         attachments[side.ordinal()] = null;
         setChanged();
         if (level != null && !level.isClientSide) {
+            onNeighborChanged();
+            refreshVisualState();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
         }
     }
@@ -114,6 +121,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
 
     public void onNeighborChanged() {
         if (level instanceof ServerLevel serverLevel) {
+            boolean connectionTypesChanged = normalizeDisconnectedBlockedSides();
             for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
                 if (unit.getGrid() != null) {
                     unit.getGrid().markForRecreation();
@@ -123,6 +131,49 @@ public abstract class DuctBlockEntity extends BlockEntity {
                 NetworkManager.get(serverLevel).scheduleFormation(unit);
             }
             level.invalidateCapabilities(worldPosition);
+            if (connectionTypesChanged) {
+                setChanged();
+                refreshVisualState();
+            }
+        }
+    }
+
+    private boolean normalizeDisconnectedBlockedSides() {
+        if (level == null) {
+            return false;
+        }
+
+        boolean changed = false;
+        for (Direction side : Direction.values()) {
+            if (connectionTypes[side.ordinal()] != ConnectionType.BLOCKED) {
+                continue;
+            }
+
+            BlockPos neighborPos = worldPosition.relative(side);
+            if (!level.isLoaded(neighborPos)) {
+                continue;
+            }
+
+            BlockEntity neighbor = level.getBlockEntity(neighborPos);
+            if (neighbor == null) {
+                connectionTypes[side.ordinal()] = ConnectionType.NORMAL;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private void refreshVisualState() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!(state.getBlock() instanceof DuctBlock ductBlock)) {
+            return;
+        }
+        BlockState updatedState = ductBlock.updateVisualConnections(level, worldPosition, state);
+        if (updatedState != state) {
+            level.setBlock(worldPosition, updatedState, Block.UPDATE_CLIENTS);
         }
     }
 

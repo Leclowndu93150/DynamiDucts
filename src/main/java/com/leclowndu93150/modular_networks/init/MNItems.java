@@ -7,11 +7,13 @@ import com.leclowndu93150.modular_networks.attachment.retriever.RetrieverFluid;
 import com.leclowndu93150.modular_networks.attachment.retriever.RetrieverItem;
 import com.leclowndu93150.modular_networks.attachment.servo.ServoFluid;
 import com.leclowndu93150.modular_networks.attachment.servo.ServoItem;
+import com.leclowndu93150.modular_networks.core.attachment.AttachmentPlacementHelper;
 import com.leclowndu93150.modular_networks.core.attachment.AttachmentTier;
 import com.leclowndu93150.modular_networks.item.AttachmentItem;
 import com.leclowndu93150.modular_networks.item.CoverItem;
 import com.leclowndu93150.modular_networks.item.DuctBlockItem;
 import com.leclowndu93150.modular_networks.item.RelayItem;
+import com.leclowndu93150.modular_networks.item.TDTooltipHelper;
 import com.leclowndu93150.modular_networks.item.WrenchItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -106,37 +108,37 @@ public class MNItems {
             () -> new DuctBlockItem(MNBlocks.LUX_DUCT.get(), new Item.Properties(), "info.modular_networks.duct.light"));
 
     public static final DeferredItem<AttachmentItem> SERVO_BASIC = ITEMS.register("servo_basic",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new ServoItem(be, side, AttachmentTier.BASIC), "info.modular_networks.servo.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.SERVO, AttachmentTier.BASIC, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new ServoFluid(duct, dir, AttachmentTier.BASIC), (duct, dir) -> new ServoItem(duct, dir, AttachmentTier.BASIC)), "info.modular_networks.servo.info"));
     public static final DeferredItem<AttachmentItem> SERVO_HARDENED = ITEMS.register("servo_hardened",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new ServoItem(be, side, AttachmentTier.HARDENED), "info.modular_networks.servo.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.SERVO, AttachmentTier.HARDENED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new ServoFluid(duct, dir, AttachmentTier.HARDENED), (duct, dir) -> new ServoItem(duct, dir, AttachmentTier.HARDENED)), "info.modular_networks.servo.info"));
     public static final DeferredItem<AttachmentItem> SERVO_REINFORCED = ITEMS.register("servo_reinforced",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new ServoItem(be, side, AttachmentTier.REINFORCED), "info.modular_networks.servo.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.SERVO, AttachmentTier.REINFORCED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new ServoFluid(duct, dir, AttachmentTier.REINFORCED), (duct, dir) -> new ServoItem(duct, dir, AttachmentTier.REINFORCED)), "info.modular_networks.servo.info"));
     public static final DeferredItem<AttachmentItem> SERVO_SIGNALUM = ITEMS.register("servo_signalum",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new ServoItem(be, side, AttachmentTier.SIGNALUM), "info.modular_networks.servo.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.SERVO, AttachmentTier.SIGNALUM, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new ServoFluid(duct, dir, AttachmentTier.SIGNALUM), (duct, dir) -> new ServoItem(duct, dir, AttachmentTier.SIGNALUM)), "info.modular_networks.servo.info"));
     public static final DeferredItem<AttachmentItem> SERVO_RESONANT = ITEMS.register("servo_resonant",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new ServoItem(be, side, AttachmentTier.RESONANT), "info.modular_networks.servo.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.SERVO, AttachmentTier.RESONANT, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new ServoFluid(duct, dir, AttachmentTier.RESONANT), (duct, dir) -> new ServoItem(duct, dir, AttachmentTier.RESONANT)), "info.modular_networks.servo.info"));
 
     public static final DeferredItem<AttachmentItem> FILTER_BASIC = ITEMS.register("filter_basic",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new FilterItem(be, side, AttachmentTier.BASIC), "info.modular_networks.filter.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.FILTER, AttachmentTier.BASIC, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new FilterFluid(duct, dir, AttachmentTier.BASIC), (duct, dir) -> new FilterItem(duct, dir, AttachmentTier.BASIC)), "info.modular_networks.filter.info"));
     public static final DeferredItem<AttachmentItem> FILTER_HARDENED = ITEMS.register("filter_hardened",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new FilterItem(be, side, AttachmentTier.HARDENED), "info.modular_networks.filter.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.FILTER, AttachmentTier.HARDENED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new FilterFluid(duct, dir, AttachmentTier.HARDENED), (duct, dir) -> new FilterItem(duct, dir, AttachmentTier.HARDENED)), "info.modular_networks.filter.info"));
     public static final DeferredItem<AttachmentItem> FILTER_REINFORCED = ITEMS.register("filter_reinforced",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new FilterItem(be, side, AttachmentTier.REINFORCED), "info.modular_networks.filter.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.FILTER, AttachmentTier.REINFORCED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new FilterFluid(duct, dir, AttachmentTier.REINFORCED), (duct, dir) -> new FilterItem(duct, dir, AttachmentTier.REINFORCED)), "info.modular_networks.filter.info"));
     public static final DeferredItem<AttachmentItem> FILTER_SIGNALUM = ITEMS.register("filter_signalum",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new FilterItem(be, side, AttachmentTier.SIGNALUM), "info.modular_networks.filter.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.FILTER, AttachmentTier.SIGNALUM, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new FilterFluid(duct, dir, AttachmentTier.SIGNALUM), (duct, dir) -> new FilterItem(duct, dir, AttachmentTier.SIGNALUM)), "info.modular_networks.filter.info"));
     public static final DeferredItem<AttachmentItem> FILTER_RESONANT = ITEMS.register("filter_resonant",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new FilterItem(be, side, AttachmentTier.RESONANT), "info.modular_networks.filter.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.FILTER, AttachmentTier.RESONANT, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new FilterFluid(duct, dir, AttachmentTier.RESONANT), (duct, dir) -> new FilterItem(duct, dir, AttachmentTier.RESONANT)), "info.modular_networks.filter.info"));
 
     public static final DeferredItem<AttachmentItem> RETRIEVER_BASIC = ITEMS.register("retriever_basic",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new RetrieverItem(be, side, AttachmentTier.BASIC), "info.modular_networks.retriever.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.RETRIEVER, AttachmentTier.BASIC, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new RetrieverFluid(duct, dir, AttachmentTier.BASIC), (duct, dir) -> new RetrieverItem(duct, dir, AttachmentTier.BASIC)), "info.modular_networks.retriever.info"));
     public static final DeferredItem<AttachmentItem> RETRIEVER_HARDENED = ITEMS.register("retriever_hardened",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new RetrieverItem(be, side, AttachmentTier.HARDENED), "info.modular_networks.retriever.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.RETRIEVER, AttachmentTier.HARDENED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new RetrieverFluid(duct, dir, AttachmentTier.HARDENED), (duct, dir) -> new RetrieverItem(duct, dir, AttachmentTier.HARDENED)), "info.modular_networks.retriever.info"));
     public static final DeferredItem<AttachmentItem> RETRIEVER_REINFORCED = ITEMS.register("retriever_reinforced",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new RetrieverItem(be, side, AttachmentTier.REINFORCED), "info.modular_networks.retriever.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.RETRIEVER, AttachmentTier.REINFORCED, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new RetrieverFluid(duct, dir, AttachmentTier.REINFORCED), (duct, dir) -> new RetrieverItem(duct, dir, AttachmentTier.REINFORCED)), "info.modular_networks.retriever.info"));
     public static final DeferredItem<AttachmentItem> RETRIEVER_SIGNALUM = ITEMS.register("retriever_signalum",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new RetrieverItem(be, side, AttachmentTier.SIGNALUM), "info.modular_networks.retriever.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.RETRIEVER, AttachmentTier.SIGNALUM, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new RetrieverFluid(duct, dir, AttachmentTier.SIGNALUM), (duct, dir) -> new RetrieverItem(duct, dir, AttachmentTier.SIGNALUM)), "info.modular_networks.retriever.info"));
     public static final DeferredItem<AttachmentItem> RETRIEVER_RESONANT = ITEMS.register("retriever_resonant",
-            () -> new AttachmentItem(new Item.Properties(), (be, side) -> new RetrieverItem(be, side, AttachmentTier.RESONANT), "info.modular_networks.retriever.info"));
+            () -> new AttachmentItem(new Item.Properties(), TDTooltipHelper.AttachmentTooltipType.RETRIEVER, AttachmentTier.RESONANT, (be, side) -> AttachmentPlacementHelper.createTransferAttachment(be, side, (duct, dir) -> new RetrieverFluid(duct, dir, AttachmentTier.RESONANT), (duct, dir) -> new RetrieverItem(duct, dir, AttachmentTier.RESONANT)), "info.modular_networks.retriever.info"));
 
     public static final DeferredItem<RelayItem> RELAY = ITEMS.register("relay",
             () -> new RelayItem(new Item.Properties()));

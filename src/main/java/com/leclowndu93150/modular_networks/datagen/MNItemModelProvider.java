@@ -4,17 +4,14 @@ import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.block.DuctBlock;
 import com.leclowndu93150.modular_networks.init.MNBlocks;
 import com.leclowndu93150.modular_networks.init.MNItems;
-import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ItemModelProvider;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.registries.DeferredItem;
-
-import java.util.Map;
 
 public class MNItemModelProvider extends ItemModelProvider {
 
@@ -32,16 +29,17 @@ public class MNItemModelProvider extends ItemModelProvider {
                 ResourceLocation texture = modLoc("block/duct/base/" + baseTex);
 
                 getBuilder("item/" + name)
-                        .parent(new ModelFile.UncheckedModelFile("block/block"))
+                        .parent(new ModelFile.UncheckedModelFile("minecraft:builtin/entity"))
                         .texture("particle", texture)
-                        .texture("duct", texture)
-                        .element()
-                            .from(5, 0, 5).to(11, 16, 11)
-                            .face(Direction.NORTH).texture("#duct").uvs(5, 0, 11, 16).end()
-                            .face(Direction.SOUTH).texture("#duct").uvs(5, 0, 11, 16).end()
-                            .face(Direction.WEST).texture("#duct").uvs(5, 0, 11, 16).end()
-                            .face(Direction.EAST).texture("#duct").uvs(5, 0, 11, 16).end()
-                            .end();
+                        .transforms()
+                        .transform(ItemDisplayContext.GUI).rotation(30, 225, 0).scale(0.625F).end()
+                        .transform(ItemDisplayContext.GROUND).translation(0, 3, 0).scale(0.25F).end()
+                        .transform(ItemDisplayContext.FIXED).scale(0.5F).end()
+                        .transform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND).translation(0, 2.5F, 0).rotation(75, 45, 0).scale(0.375F).end()
+                        .transform(ItemDisplayContext.THIRD_PERSON_LEFT_HAND).translation(0, 2.5F, 0).rotation(75, 225, 0).scale(0.375F).end()
+                        .transform(ItemDisplayContext.FIRST_PERSON_RIGHT_HAND).rotation(0, 45, 0).scale(0.4F).end()
+                        .transform(ItemDisplayContext.FIRST_PERSON_LEFT_HAND).rotation(0, 225, 0).scale(0.4F).end()
+                        .end();
             }
         });
 
@@ -64,8 +62,8 @@ public class MNItemModelProvider extends ItemModelProvider {
         simpleItem(MNItems.RETRIEVER_RESONANT, "retriever_4");
 
         simpleItem(MNItems.RELAY, "relay");
-        simpleItem(MNItems.COVER, "cover");
-        simpleItem(MNItems.WRENCH, "wrench");
+        builtinEntityItem(MNItems.COVER, modLoc("item/cover"));
+        simpleItem(MNItems.WRENCH, "crescent_hammer");
     }
 
     private void simpleItem(DeferredItem<?> item, String texture) {
@@ -73,5 +71,20 @@ public class MNItemModelProvider extends ItemModelProvider {
                 mcLoc("item/generated"),
                 "layer0",
                 modLoc("item/" + texture));
+    }
+
+    private void builtinEntityItem(DeferredItem<?> item, ResourceLocation particle) {
+        getBuilder("item/" + item.getId().getPath())
+                .parent(new ModelFile.UncheckedModelFile("minecraft:builtin/entity"))
+                .texture("particle", particle)
+                .transforms()
+                .transform(ItemDisplayContext.GUI).rotation(30, 225, 0).scale(0.625F).end()
+                .transform(ItemDisplayContext.GROUND).translation(0, 3, 0).scale(0.25F).end()
+                .transform(ItemDisplayContext.FIXED).scale(0.5F).end()
+                .transform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND).translation(0, 2.5F, 0).rotation(75, 45, 0).scale(0.375F).end()
+                .transform(ItemDisplayContext.THIRD_PERSON_LEFT_HAND).translation(0, 2.5F, 0).rotation(75, 225, 0).scale(0.375F).end()
+                .transform(ItemDisplayContext.FIRST_PERSON_RIGHT_HAND).rotation(0, 45, 0).scale(0.4F).end()
+                .transform(ItemDisplayContext.FIRST_PERSON_LEFT_HAND).rotation(0, 225, 0).scale(0.4F).end()
+                .end();
     }
 }

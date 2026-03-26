@@ -54,7 +54,7 @@ public class EnergyDuctBlockEntity extends DuctBlockEntity {
         RESONANT_EMPTY(4, true),
         SUPERCONDUCTOR_EMPTY(5, true);
 
-        final int index;
+        public final int index;
         private final boolean craftingItem;
 
         Tier(int index, boolean craftingItem) {

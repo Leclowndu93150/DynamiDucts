@@ -28,6 +28,10 @@ public class TransportDuctBlock extends DuctBlock {
         return TOKENS;
     }
 
+    public TransportDuctBlockEntity.Tier getTier() {
+        return tier;
+    }
+
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return tier.createBlockEntity(pos, state);

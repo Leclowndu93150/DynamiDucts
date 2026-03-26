@@ -44,7 +44,7 @@ public class RetrieverItem extends ConnectionBase {
         if (!(localUnit.getGrid() instanceof ItemGrid grid)) return;
 
         List<Route> routes = grid.getRouteCache().getRoutes(localUnit, grid.getNodeSet());
-        int maxStack = tier.stackSize();
+        int maxStack = filter.getMaxStockOrDefault(tier.stackSize());
 
         for (Route route : routes) {
             for (ItemDuctUnit node : grid.getNodeSet()) {

@@ -9,11 +9,18 @@ import net.neoforged.neoforge.fluids.FluidStack;
 
 public class FilterLogic {
 
+    public static final int ROUTE_TYPE_NEAREST = 0;
+    public static final int ROUTE_TYPE_FURTHEST = 1;
+    public static final int ROUTE_TYPE_RANDOM = 2;
+    public static final int ROUTE_TYPE_ROUND_ROBIN = 3;
+    public static final int ROUTE_TYPE_COUNT = 4;
+
     private final int slotCount;
     private final ItemStack[] filterStacks;
     private boolean whitelist = true;
     private boolean matchComponents = false;
     private boolean matchModId = false;
+    private int routeType = ROUTE_TYPE_NEAREST;
     private int maxStock = -1;
 
     public FilterLogic(int slotCount) {
@@ -108,6 +115,18 @@ public class FilterLogic {
         this.maxStock = maxStock;
     }
 
+    public int getMaxStockOrDefault(int fallback) {
+        return maxStock > 0 ? maxStock : fallback;
+    }
+
+    public int getRouteType() {
+        return routeType;
+    }
+
+    public void setRouteType(int routeType) {
+        this.routeType = Math.floorMod(routeType, ROUTE_TYPE_COUNT);
+    }
+
     public int getSlotCount() {
         return slotCount;
     }
@@ -117,6 +136,7 @@ public class FilterLogic {
         tag.putBoolean("Whitelist", whitelist);
         tag.putBoolean("MatchComponents", matchComponents);
         tag.putBoolean("MatchModId", matchModId);
+        tag.putInt("RouteType", routeType);
         tag.putInt("MaxStock", maxStock);
 
         ListTag items = new ListTag();
@@ -135,6 +155,7 @@ public class FilterLogic {
         whitelist = tag.getBoolean("Whitelist");
         matchComponents = tag.getBoolean("MatchComponents");
         matchModId = tag.getBoolean("MatchModId");
+        routeType = tag.contains("RouteType") ? Math.floorMod(tag.getInt("RouteType"), ROUTE_TYPE_COUNT) : ROUTE_TYPE_NEAREST;
         maxStock = tag.getInt("MaxStock");
 
         ListTag items = tag.getList("Filters", Tag.TAG_COMPOUND);

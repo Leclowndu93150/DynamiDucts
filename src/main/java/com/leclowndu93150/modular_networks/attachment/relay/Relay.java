@@ -55,7 +55,23 @@ public class Relay extends Attachment {
     }
 
     public void setType(int type) {
-        this.type = type;
+        this.type = Math.max(0, Math.min(2, type));
+    }
+
+    public int getInvertMode() {
+        return invertMode;
+    }
+
+    public void setInvertMode(int invertMode) {
+        this.invertMode = Math.max(0, Math.min(3, invertMode));
+    }
+
+    public int getThreshold() {
+        return threshold;
+    }
+
+    public void setThreshold(int threshold) {
+        this.threshold = Math.max(0, Math.min(15, threshold));
     }
 
     public int readInputSignal() {
