@@ -3,6 +3,7 @@ package com.leclowndu93150.modular_networks.duct.item;
 import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
+import com.leclowndu93150.modular_networks.core.network.Route;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -76,6 +77,11 @@ public class ItemDuctUnit extends DuctUnit<ItemDuctUnit, ItemGrid, IItemHandler>
     public boolean insertItem(ItemStack stack, Direction entrySide) {
         if (grid == null || stack.isEmpty()) return false;
         return grid.insertNewItem(stack, this, entrySide, speed);
+    }
+
+    public void insertItemWithRoute(ItemStack stack, Direction entrySide, Route route, int speedBoost) {
+        TravelingItem item = new TravelingItem(stack, route, getPos(), entrySide, Math.max(1, speed / speedBoost));
+        addTravelingItem(item);
     }
 
     public void addTravelingItem(TravelingItem item) {

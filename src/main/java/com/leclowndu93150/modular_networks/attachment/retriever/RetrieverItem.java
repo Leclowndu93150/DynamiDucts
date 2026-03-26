@@ -43,35 +43,71 @@ public class RetrieverItem extends ConnectionBase {
         if (!(unit instanceof ItemDuctUnit localUnit)) return;
         if (!(localUnit.getGrid() instanceof ItemGrid grid)) return;
 
-        List<Route> routes = grid.getRouteCache().getRoutes(localUnit, grid.getNodeSet());
+        IItemHandler localInv = level.getCapability(
+                Capabilities.ItemHandler.BLOCK,
+                parent.getBlockPos().relative(side),
+                side.getOpposite()
+        );
+        if (localInv == null) return;
+
         int maxStack = filter.getMaxStockOrDefault(tier.stackSize());
+        List<Route> routes = grid.getSortedRoutes(localUnit, filter.getRouteType());
 
         for (Route route : routes) {
-            for (ItemDuctUnit node : grid.getNodeSet()) {
-                if (!node.getPos().equals(route.destination)) continue;
+            ItemDuctUnit remoteNode = findNode(route.destination, grid);
+            if (remoteNode == null) continue;
 
-                IItemHandler source = level.getCapability(
-                        Capabilities.ItemHandler.BLOCK,
-                        node.getPos().relative(route.insertionSide),
-                        route.insertionSide.getOpposite()
-                );
-                if (source == null) continue;
+            IItemHandler remoteInv = level.getCapability(
+                    Capabilities.ItemHandler.BLOCK,
+                    remoteNode.getPos().relative(route.insertionSide),
+                    route.insertionSide.getOpposite()
+            );
+            if (remoteInv == null) continue;
 
-                for (int slot = 0; slot < source.getSlots(); slot++) {
-                    ItemStack extracted = source.extractItem(slot, maxStack, true);
-                    if (extracted.isEmpty()) continue;
+            for (int slot = 0; slot < remoteInv.getSlots(); slot++) {
+                ItemStack peek = remoteInv.extractItem(slot, maxStack, true);
+                if (peek.isEmpty()) continue;
+                if (!filter.matchesItem(peek)) continue;
+                if (!canInsertInto(localInv, peek)) continue;
 
-                    if (!filter.isEmpty() && !filter.matchesItem(extracted)) continue;
+                ItemStack extracted = remoteInv.extractItem(slot, maxStack, false);
+                if (extracted.isEmpty()) continue;
 
-                    ItemStack toSend = source.extractItem(slot, maxStack, false);
-                    if (!toSend.isEmpty()) {
-                        if (!node.insertItem(toSend, route.insertionSide)) {
-                            source.insertItem(slot, toSend, false);
+                if (tier.multiStack() && extracted.getCount() < maxStack) {
+                    for (int s = slot + 1; s < remoteInv.getSlots() && extracted.getCount() < maxStack; s++) {
+                        ItemStack other = remoteInv.extractItem(s, maxStack - extracted.getCount(), true);
+                        if (other.isEmpty() || !ItemStack.isSameItemSameComponents(extracted, other)) continue;
+                        ItemStack extra = remoteInv.extractItem(s, maxStack - extracted.getCount(), false);
+                        if (!extra.isEmpty()) {
+                            extracted.grow(extra.getCount());
                         }
-                        return;
                     }
                 }
+
+                Route returnRoute = grid.getRouteCache().getRouteBetween(remoteNode, localUnit, side, grid.getNodeSet());
+                if (returnRoute == null) {
+                    remoteInv.insertItem(slot, extracted, false);
+                    continue;
+                }
+
+                remoteNode.insertItemWithRoute(extracted, route.insertionSide, returnRoute, tier.speedBoost());
+                return;
             }
         }
+    }
+
+    private boolean canInsertInto(IItemHandler handler, ItemStack stack) {
+        ItemStack simulated = stack.copy();
+        for (int i = 0; i < handler.getSlots() && !simulated.isEmpty(); i++) {
+            simulated = handler.insertItem(i, simulated, true);
+        }
+        return simulated.getCount() < stack.getCount();
+    }
+
+    private ItemDuctUnit findNode(net.minecraft.core.BlockPos pos, ItemGrid grid) {
+        for (ItemDuctUnit node : grid.getNodeSet()) {
+            if (node.getPos().equals(pos)) return node;
+        }
+        return null;
     }
 }

@@ -7,14 +7,15 @@ public record AttachmentTier(
         int stackSize,
         int tickRate,
         int fluidDrainAmount,
-        float speedMultiplier
+        int speedBoost,
+        boolean multiStack
 ) {
 
-    public static final AttachmentTier BASIC = new AttachmentTier(0, "basic", 3, 1, 40, 150, 1.0F);
-    public static final AttachmentTier HARDENED = new AttachmentTier(1, "hardened", 6, 16, 40, 300, 1.0F);
-    public static final AttachmentTier REINFORCED = new AttachmentTier(2, "reinforced", 9, 16, 20, 600, 2.0F);
-    public static final AttachmentTier SIGNALUM = new AttachmentTier(3, "signalum", 12, 64, 10, 1200, 4.0F);
-    public static final AttachmentTier RESONANT = new AttachmentTier(4, "resonant", 15, 64, 5, 3000, 8.0F);
+    public static final AttachmentTier BASIC = new AttachmentTier(0, "basic", 3, 8, 60, 150, 1, false);
+    public static final AttachmentTier HARDENED = new AttachmentTier(1, "hardened", 6, 16, 40, 300, 1, false);
+    public static final AttachmentTier REINFORCED = new AttachmentTier(2, "reinforced", 9, 32, 20, 600, 1, false);
+    public static final AttachmentTier SIGNALUM = new AttachmentTier(3, "signalum", 12, 64, 10, 1200, 2, true);
+    public static final AttachmentTier RESONANT = new AttachmentTier(4, "resonant", 15, 64, 10, 3000, 3, true);
 
     public static final AttachmentTier[] TIERS = {BASIC, HARDENED, REINFORCED, SIGNALUM, RESONANT};
 

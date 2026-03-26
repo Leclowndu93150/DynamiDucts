@@ -40,10 +40,6 @@ public final class TDTooltipHelper {
     private static final int DEFAULT_ENERGY_BASE_TRANSFER = 1000;
     private static final byte PATHWEIGHT_DENSE = 1;
     private static final byte PATHWEIGHT_VACUUM = 2;
-    private static final int[] SERVO_MAX_STACK = {8, 16, 32, 64, 64};
-    private static final boolean[] SERVO_MULTI_SLOT = {false, false, false, true, true};
-    private static final int[] SERVO_TICK_DELAY = {60, 40, 20, 10, 10};
-    private static final int[] SERVO_SPEED_BOOST = {1, 1, 1, 2, 3};
     private static final int[] SERVO_FLUID_THROTTLE = {50, 75, 100, 150, 200};
     private static final String[] FILTER_FLAG_KEYS = {
             "info.modular_networks.filter.whiteList.off",
@@ -103,12 +99,12 @@ public final class TDTooltipHelper {
 
         tooltip.add(info("info.modular_networks.servo.redstoneInt"));
         tooltip.add(heading("info.modular_networks.cofh.items"));
-        tooltip.add(detail("info.modular_networks.servo.extractRate", formatSeconds(SERVO_TICK_DELAY[tierIndex])));
-        tooltip.add(detail("info.modular_networks.servo.maxStackSize", Integer.toString(SERVO_MAX_STACK[tierIndex])));
+        tooltip.add(detail("info.modular_networks.servo.extractRate", formatSeconds(tier.tickRate())));
+        tooltip.add(detail("info.modular_networks.servo.maxStackSize", Integer.toString(tier.stackSize())));
         addFilterOptions(tooltip, true, tierIndex);
-        tooltip.add(info(SERVO_MULTI_SLOT[tierIndex] ? "info.modular_networks.servo.slotMulti" : "info.modular_networks.servo.slotSingle"));
-        if (SERVO_SPEED_BOOST[tierIndex] != 1) {
-            tooltip.add(detail("info.modular_networks.servo.speedBoost", SERVO_SPEED_BOOST[tierIndex] + "x"));
+        tooltip.add(info(tier.multiStack() ? "info.modular_networks.servo.slotMulti" : "info.modular_networks.servo.slotSingle"));
+        if (tier.speedBoost() != 1) {
+            tooltip.add(detail("info.modular_networks.servo.speedBoost", tier.speedBoost() + "x"));
         }
         tooltip.add(heading("info.modular_networks.cofh.fluids"));
         tooltip.add(detail("info.modular_networks.servo.extractRate", SERVO_FLUID_THROTTLE[tierIndex] + "%"));

@@ -97,7 +97,7 @@ public class TravelingItem {
         if (pathIndex < route.path.size()) {
             return route.path.get(pathIndex);
         }
-        return oldDirection;
+        return route.insertionSide;
     }
 
     public Direction getOldDirection() {

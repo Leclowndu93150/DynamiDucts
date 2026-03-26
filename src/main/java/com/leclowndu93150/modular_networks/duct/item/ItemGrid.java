@@ -221,9 +221,13 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
     private boolean passesFilter(ItemDuctUnit unit, Direction side, ItemStack stack) {
         Attachment att = unit.getParent().getAttachment(side);
         if (att instanceof ConnectionBase conn && conn.isFilter()) {
-            return conn.getFilter().isEmpty() || conn.getFilter().matchesItem(stack);
+            return conn.getFilter().matchesItem(stack);
         }
         return true;
+    }
+
+    public List<Route> getSortedRoutes(ItemDuctUnit origin, int routeType) {
+        return routeCache.getSortedRoutes(origin, nodeSet, routeType);
     }
 
     public RouteCache getRouteCache() {

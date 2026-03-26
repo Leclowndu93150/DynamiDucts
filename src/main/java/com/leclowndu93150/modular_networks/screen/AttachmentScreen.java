@@ -38,7 +38,7 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
     private static final int[][] LEVEL_BUTTON_TEX = {
             {-1, -1},
             {0, 204},
-            {80, 204},
+            {0, 204},
     };
 
     private InfoSideTabWidget infoTab;
@@ -299,7 +299,7 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
     }
 
     private static boolean isHovered(SheetButton button) {
-        return button != null && button.isHoveredOrFocused();
+        return button != null && button.isHovered();
     }
 
     private List<Component> getInfoTabLines() {

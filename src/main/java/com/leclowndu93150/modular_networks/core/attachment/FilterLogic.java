@@ -7,6 +7,11 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class FilterLogic {
 
     public static final int ROUTE_TYPE_NEAREST = 0;
@@ -23,6 +28,9 @@ public class FilterLogic {
     private int routeType = ROUTE_TYPE_NEAREST;
     private int maxStock = -1;
 
+    private Set<String> cachedModIds;
+    private boolean needsRecalc = true;
+
     public FilterLogic(int slotCount) {
         this.slotCount = Math.max(1, slotCount);
         this.filterStacks = new ItemStack[this.slotCount];
@@ -34,10 +42,18 @@ public class FilterLogic {
     public boolean matchesItem(ItemStack stack) {
         if (stack.isEmpty()) return false;
 
+        if (matchModId) {
+            recalcIfNeeded();
+            if (!cachedModIds.isEmpty()) {
+                String mod = stack.getItem().builtInRegistryHolder().key().location().getNamespace();
+                if (cachedModIds.contains(mod)) return whitelist;
+            }
+        }
+
         boolean found = false;
         for (ItemStack filter : filterStacks) {
             if (filter.isEmpty()) continue;
-            if (matchesFilter(stack, filter)) {
+            if (matchesFilterEntry(stack, filter)) {
                 found = true;
                 break;
             }
@@ -45,11 +61,26 @@ public class FilterLogic {
         return whitelist == found;
     }
 
-    private boolean matchesFilter(ItemStack stack, ItemStack filter) {
+    private boolean matchesFilterEntry(ItemStack stack, ItemStack filter) {
         if (matchComponents) {
             return ItemStack.isSameItemSameComponents(stack, filter);
         }
         return ItemStack.isSameItem(stack, filter);
+    }
+
+    private void recalcIfNeeded() {
+        if (!needsRecalc) return;
+        needsRecalc = false;
+        cachedModIds = new HashSet<>();
+        for (ItemStack filter : filterStacks) {
+            if (!filter.isEmpty()) {
+                cachedModIds.add(filter.getItem().builtInRegistryHolder().key().location().getNamespace());
+            }
+        }
+    }
+
+    public void markDirty() {
+        needsRecalc = true;
     }
 
     public boolean matchesFluid(FluidStack stack) {
@@ -80,6 +111,7 @@ public class FilterLogic {
     public void setFilterStack(int slot, ItemStack stack) {
         if (slot >= 0 && slot < filterStacks.length) {
             filterStacks[slot] = stack.copy();
+            markDirty();
         }
     }
 
@@ -167,5 +199,6 @@ public class FilterLogic {
                 filterStacks[i] = ItemStack.parseOptional(provider, itemTag);
             }
         }
+        markDirty();
     }
 }
