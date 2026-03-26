@@ -10,7 +10,7 @@ public abstract class ConnectionBase extends Attachment {
 
     protected final AttachmentTier tier;
     protected final FilterLogic filter;
-    protected RedstoneMode redstoneMode = RedstoneMode.IGNORED;
+    protected RedstoneMode redstoneMode = RedstoneMode.HIGH;
     protected boolean isPowered;
     private int tickCounter;
 
@@ -34,10 +34,20 @@ public abstract class ConnectionBase extends Attachment {
 
     public void setRedstoneMode(RedstoneMode mode) {
         this.redstoneMode = mode;
+        Level level = parent.getLevel();
+        if (level != null) {
+            updatePowerState(level.hasNeighborSignal(parent.getBlockPos()));
+        }
     }
 
     public boolean isActive() {
-        return redstoneMode.isActive(isPowered);
+        return isPowered;
+    }
+
+    public boolean updatePowerState(boolean powered) {
+        boolean wasPowered = isPowered;
+        isPowered = redstoneMode.isActive(powered);
+        return wasPowered != isPowered;
     }
 
     @Override
@@ -45,7 +55,7 @@ public abstract class ConnectionBase extends Attachment {
         Level level = parent.getLevel();
         if (level == null || level.isClientSide) return;
 
-        isPowered = level.hasNeighborSignal(parent.getBlockPos());
+        updatePowerState(level.hasNeighborSignal(parent.getBlockPos()));
 
         if (!isActive()) return;
 
@@ -62,16 +72,30 @@ public abstract class ConnectionBase extends Attachment {
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         tag.putInt("TierIndex", tier.index());
         tag.putInt("RedstoneMode", redstoneMode.ordinal());
+        tag.putBoolean("IsPowered", isPowered);
         tag.put("Filter", filter.save(provider));
     }
 
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         if (tag.contains("RedstoneMode")) {
-            redstoneMode = RedstoneMode.values()[tag.getInt("RedstoneMode")];
+            redstoneMode = readRedstoneMode(tag.getInt("RedstoneMode"));
+        }
+        if (tag.contains("IsPowered")) {
+            isPowered = tag.getBoolean("IsPowered");
+        } else {
+            isPowered = redstoneMode.isDisabled();
         }
         if (tag.contains("Filter")) {
             filter.load(tag.getCompound("Filter"), provider);
         }
+    }
+
+    private static RedstoneMode readRedstoneMode(int ordinal) {
+        RedstoneMode[] modes = RedstoneMode.values();
+        if (ordinal >= 0 && ordinal < modes.length) {
+            return modes[ordinal];
+        }
+        return RedstoneMode.HIGH;
     }
 }

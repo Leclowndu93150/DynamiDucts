@@ -2,8 +2,11 @@ package com.leclowndu93150.modular_networks.screen;
 
 import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.client.gui.widget.SheetButton;
+import com.leclowndu93150.modular_networks.client.gui.widget.tab.InfoSideTabWidget;
+import com.leclowndu93150.modular_networks.client.gui.widget.tab.RedstoneControlTabWidget;
 import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
 import com.leclowndu93150.modular_networks.core.attachment.FilterLogic;
+import com.leclowndu93150.modular_networks.core.attachment.RedstoneMode;
 import com.leclowndu93150.modular_networks.menu.AttachmentMenu;
 import com.leclowndu93150.modular_networks.network.payload.AttachmentConfigPayload;
 import net.minecraft.client.gui.GuiGraphics;
@@ -12,6 +15,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
 
@@ -34,6 +40,9 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
             {0, 204},
             {80, 204},
     };
+
+    private InfoSideTabWidget infoTab;
+    private RedstoneControlTabWidget redstoneTab;
 
     public AttachmentScreen(AttachmentMenu menu, Inventory playerInv, Component title) {
         super(menu, playerInv, title);
@@ -100,6 +109,17 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
                     this::getIncStackTooltip
             ));
         }
+
+        int tabX = leftPos + imageWidth + 2;
+        infoTab = addRenderableWidget(new InfoSideTabWidget(
+                tabX, topPos + 4,
+                this::getInfoTabLines
+        ));
+        redstoneTab = addRenderableWidget(new RedstoneControlTabWidget(
+                tabX, topPos + 32,
+                () -> RedstoneMode.values()[Math.min(menu.getRedstoneMode(), RedstoneMode.values().length - 1)],
+                this::setRedstoneMode
+        ));
     }
 
     @Override
@@ -127,8 +147,6 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
             graphics.drawString(font, text, xQty, 46, 0x404040, false);
         }
 
-        graphics.drawString(font, Component.translatable("info.modular_networks.redstoneMode." + menu.getRedstoneMode()),
-                8, 6, 0x404040, false);
     }
 
     @Override
@@ -159,35 +177,31 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
     }
 
     private void onFlagClicked(int flagIndex) {
-        int action = switch (flagIndex) {
-            case 0 -> AttachmentConfigPayload.ACTION_TOGGLE_WHITELIST;
-            case 1 -> AttachmentConfigPayload.ACTION_TOGGLE_MATCH_COMPONENTS;
-            case 2 -> AttachmentConfigPayload.ACTION_TOGGLE_MATCH_MOD;
-            default -> -1;
-        };
-        if (action < 0) {
-            return;
-        }
-
-        FilterLogic filter = menu.getFilter();
         switch (flagIndex) {
-            case 0 -> menu.setLocalWhitelist(!filter.isWhitelist());
-            case 1 -> menu.setLocalMatchComponents(!filter.isMatchComponents());
-            case 2 -> menu.setLocalMatchModId(!filter.isMatchModId());
-            default -> {
-                return;
+            case 0 -> {
+                boolean newVal = !menu.isWhitelist();
+                menu.setLocalWhitelist(newVal);
+                sendConfig(AttachmentConfigPayload.ACTION_SET_WHITELIST, newVal ? 1 : 0);
+            }
+            case 1 -> {
+                boolean newVal = !menu.isMatchComponents();
+                menu.setLocalMatchComponents(newVal);
+                sendConfig(AttachmentConfigPayload.ACTION_SET_MATCH_COMPONENTS, newVal ? 1 : 0);
+            }
+            case 2 -> {
+                boolean newVal = !menu.isMatchModId();
+                menu.setLocalMatchModId(newVal);
+                sendConfig(AttachmentConfigPayload.ACTION_SET_MATCH_MOD, newVal ? 1 : 0);
             }
         }
-        sendConfig(action, 0);
     }
 
     private void onLevelClicked(int levelIndex, int mouseButton) {
         if (levelIndex != 0) {
             return;
         }
-        FilterLogic filter = menu.getFilter();
         int delta = mouseButton == 1 ? -1 : 1;
-        int routeType = Math.floorMod(filter.getRouteType() + delta, FilterLogic.ROUTE_TYPE_COUNT);
+        int routeType = Math.floorMod(menu.getRouteType() + delta, FilterLogic.ROUTE_TYPE_COUNT);
         menu.setLocalRouteType(routeType);
         sendConfig(AttachmentConfigPayload.ACTION_SET_ROUTE_TYPE, routeType);
     }
@@ -219,7 +233,7 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
             case 2 -> menu.isMatchModId();
             default -> false;
         };
-        int u = FLAG_BUTTON_TEX[flagIndex][0] + (active ? BUTTON_SIZE : 0);
+        int u = FLAG_BUTTON_TEX[flagIndex][0] + (active ? 0 : BUTTON_SIZE);
         int v = FLAG_BUTTON_TEX[flagIndex][1] + (isHovered(button) ? BUTTON_SIZE : 0);
         return new SheetButton.Frame(u, v);
     }
@@ -242,9 +256,9 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
 
     private Component getFlagTooltip(int flagIndex) {
         return switch (flagIndex) {
-            case 0 -> Component.translatable("info.modular_networks.filter.whiteList." + (menu.isWhitelist() ? "on" : "off"));
-            case 1 -> Component.translatable("info.modular_networks.filter.components." + (menu.isMatchComponents() ? "on" : "off"));
-            case 2 -> Component.translatable("info.modular_networks.filter.modSorting." + (menu.isMatchModId() ? "on" : "off"));
+            case 0 -> Component.translatable("info.modular_networks.filter.whiteList." + (menu.isWhitelist() ? "off" : "on"));
+            case 1 -> Component.translatable("info.modular_networks.filter.components." + (menu.isMatchComponents() ? "off" : "on"));
+            case 2 -> Component.translatable("info.modular_networks.filter.modSorting." + (menu.isMatchModId() ? "off" : "on"));
             default -> Component.empty();
         };
     }
@@ -286,5 +300,25 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
 
     private static boolean isHovered(SheetButton button) {
         return button != null && button.isHoveredOrFocused();
+    }
+
+    private List<Component> getInfoTabLines() {
+        List<Component> lines = new ArrayList<>();
+        ConnectionBase attachment = menu.getAttachment();
+        if (attachment.isServo()) {
+            lines.add(Component.translatable("info.modular_networks.servo.info"));
+        } else if (attachment.isRetriever()) {
+            lines.add(Component.translatable("info.modular_networks.retriever.info"));
+        } else if (attachment.isFilter()) {
+            lines.add(Component.translatable("info.modular_networks.filter.info"));
+        }
+        lines.add(Component.translatable("info.modular_networks.servo.redstoneInt"));
+        lines.add(Component.translatable("tab.modular_networks.conChange"));
+        return lines;
+    }
+
+    private void setRedstoneMode(RedstoneMode mode) {
+        menu.setLocalRedstoneMode(mode.ordinal());
+        sendConfig(AttachmentConfigPayload.ACTION_SET_REDSTONE_MODE, mode.ordinal());
     }
 }

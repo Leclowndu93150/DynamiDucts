@@ -91,6 +91,17 @@ public class MNLanguageProvider extends LanguageProvider {
         add("info.modular_networks.duct.light", "Emits light when given a Redstone signal.");
         add("info.modular_networks.duct.dense", "Increases path length dramatically.");
         add("info.modular_networks.duct.vacuum", "Decreases path length dramatically.");
+        add("info.modular_networks.information", "Information");
+        add("info.modular_networks.redstoneControl", "Redstone Control");
+        add("info.modular_networks.controlStatus", "Control Status");
+        add("info.modular_networks.signalRequired", "Signal Required");
+        add("info.modular_networks.ignored", "Ignored");
+        add("info.modular_networks.enabled", "Enabled");
+        add("info.modular_networks.disabled", "Disabled");
+        add("info.modular_networks.low", "Low");
+        add("info.modular_networks.high", "High");
+        add("info.modular_networks.info.redstone", "Redstone");
+        add("tab.modular_networks.conChange", "Hold Shift and use either mouse button to fine tune quantities.");
 
         add("info.modular_networks.duct.fluidBasic", "Will break if contents are extremely hot or cold.");
         add("info.modular_networks.duct.fluidHardened", "Contents may be any temperature.");
@@ -137,10 +148,9 @@ public class MNLanguageProvider extends LanguageProvider {
         add("info.modular_networks.servo.slotSingle", "Extracts from a single slot.");
         add("info.modular_networks.servo.speedBoost", "Speed Boost");
         add("info.modular_networks.info.invalidCover", "Place in a crafting grid to convert to a Stone Cover.");
-        add("info.modular_networks.redstoneMode.0", "Always Active");
-        add("info.modular_networks.redstoneMode.1", "Active with Signal");
-        add("info.modular_networks.redstoneMode.2", "Active without Signal");
-        add("info.modular_networks.redstoneMode.3", "Disabled");
+        add("info.modular_networks.redstoneMode.0", "Ignored");
+        add("info.modular_networks.redstoneMode.1", "Active without Signal");
+        add("info.modular_networks.redstoneMode.2", "Active with Signal");
 
         for (int i = 0; i < 16; i++) {
             String[] colors = {"Red", "Green", "Brown", "Blue", "Purple", "Cyan", "Light Gray", "Gray",

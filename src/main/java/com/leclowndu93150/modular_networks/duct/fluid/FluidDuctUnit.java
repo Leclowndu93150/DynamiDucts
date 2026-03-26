@@ -5,6 +5,8 @@ import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -15,6 +17,7 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
     private final int capacityPerDuct;
     private final int throughputPerDuct;
     private final boolean transparent;
+    private FluidStack visualFluid = FluidStack.EMPTY;
 
     public FluidDuctUnit(DuctBlockEntity parent, int capacityPerDuct, int throughputPerDuct, boolean transparent) {
         super(parent);
@@ -100,5 +103,26 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
 
     public boolean isTransparent() {
         return transparent;
+    }
+
+    public FluidStack getVisualFluid() {
+        return grid != null ? grid.getTank().getFluid() : visualFluid;
+    }
+
+    public void setVisualFluid(FluidStack fluid) {
+        visualFluid = fluid.copy();
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        FluidStack fluid = grid != null ? grid.getTank().getFluid() : visualFluid;
+        if (!fluid.isEmpty()) {
+            tag.put("VisualFluid", fluid.saveOptional(provider));
+        }
+    }
+
+    @Override
+    public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
+        visualFluid = tag.contains("VisualFluid") ? FluidStack.parseOptional(provider, tag.getCompound("VisualFluid")) : FluidStack.EMPTY;
     }
 }

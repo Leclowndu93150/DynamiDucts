@@ -4,8 +4,7 @@ import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.blockentity.ItemDuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.duct.item.ItemDuctUnit;
-import com.leclowndu93150.modular_networks.duct.item.ItemGrid;
-import com.leclowndu93150.modular_networks.duct.item.TravelingItem;
+import com.leclowndu93150.modular_networks.duct.item.TravelingItemSnapshot;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -18,7 +17,7 @@ public class ItemDuctRenderer extends DuctBlockEntityRenderer {
 
     private static final float ITEM_SCALE = 0.35F;
     private static final int MAX_ITEMS_PER_DUCT = 16;
-    private static float spinAngle = 0;
+    private static final float SPIN_SPEED = 0.5F;
 
     public ItemDuctRenderer(BlockEntityRendererProvider.Context context) {
         super(context);
@@ -38,23 +37,19 @@ public class ItemDuctRenderer extends DuctBlockEntityRenderer {
                                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
         var unit = be.getDuctUnit(DuctToken.ITEM);
         if (!(unit instanceof ItemDuctUnit itemUnit)) return;
-        if (itemUnit.getGrid() == null) return;
-
-        ItemGrid grid = itemUnit.getGrid();
-        spinAngle += partialTick * 1.5F;
-        if (spinAngle > 360) spinAngle -= 360;
+        if (be.getLevel() == null) return;
+        float gameTime = (be.getLevel().getGameTime() + partialTick) * SPIN_SPEED;
+        float spinAngle = gameTime % 360;
 
         int rendered = 0;
-        for (TravelingItem tItem : grid.getTravelingItems()) {
-            if (!tItem.currentPos.equals(be.getBlockPos())) continue;
+        for (TravelingItemSnapshot tItem : itemUnit.getClientTravelingItems()) {
             if (rendered >= MAX_ITEMS_PER_DUCT) break;
 
-            float progress = (tItem.ticksInDuct + partialTick) / tItem.speed;
-            Direction dir = tItem.getCurrentDirection();
-
-            float offsetX = dir.getStepX() * progress * 0.3125F;
-            float offsetY = dir.getStepY() * progress * 0.3125F;
-            float offsetZ = dir.getStepZ() * progress * 0.3125F;
+            float travel = tItem.getProgress(partialTick) - 0.5F;
+            Direction direction = travel < 0.0F ? tItem.getOldDirection() : tItem.getDirection();
+            float offsetX = direction.getStepX() * travel;
+            float offsetY = direction.getStepY() * travel;
+            float offsetZ = direction.getStepZ() * travel;
 
             poseStack.pushPose();
             poseStack.translate(0.5F + offsetX, 0.5F + offsetY - 0.05F, 0.5F + offsetZ);
@@ -62,7 +57,7 @@ public class ItemDuctRenderer extends DuctBlockEntityRenderer {
             poseStack.scale(ITEM_SCALE, ITEM_SCALE, ITEM_SCALE);
 
             Minecraft.getInstance().getItemRenderer().renderStatic(
-                    tItem.stack, ItemDisplayContext.FIXED,
+                    tItem.getStack(), ItemDisplayContext.FIXED,
                     packedLight, packedOverlay,
                     poseStack, bufferSource,
                     be.getLevel(), 0);

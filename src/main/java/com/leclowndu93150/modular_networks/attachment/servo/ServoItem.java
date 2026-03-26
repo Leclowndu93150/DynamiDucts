@@ -61,7 +61,7 @@ public class ServoItem extends ConnectionBase {
 
             ItemStack toSend = source.extractItem(slot, maxStack, false);
             if (!toSend.isEmpty()) {
-                if (!itemUnit.insertItem(toSend)) {
+                if (!itemUnit.insertItem(toSend, side)) {
                     source.insertItem(slot, toSend, false);
                 }
                 return;

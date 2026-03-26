@@ -22,11 +22,17 @@ public class AttachmentItem extends Item {
     private final TDTooltipHelper.AttachmentTooltipType tooltipType;
     private final AttachmentTier tier;
     private final BiFunction<DuctBlockEntity, Direction, Attachment> placer;
+    private final boolean requiresExternalSide;
 
     public AttachmentItem(Properties properties, TDTooltipHelper.AttachmentTooltipType tooltipType, AttachmentTier tier, BiFunction<DuctBlockEntity, Direction, Attachment> placer, String... tooltipKeys) {
+        this(properties, tooltipType, tier, true, placer, tooltipKeys);
+    }
+
+    public AttachmentItem(Properties properties, TDTooltipHelper.AttachmentTooltipType tooltipType, AttachmentTier tier, boolean requiresExternalSide, BiFunction<DuctBlockEntity, Direction, Attachment> placer, String... tooltipKeys) {
         super(properties);
         this.tooltipType = tooltipType;
         this.tier = tier;
+        this.requiresExternalSide = requiresExternalSide;
         this.placer = placer;
     }
 
@@ -39,7 +45,10 @@ public class AttachmentItem extends Item {
         if (!level.isClientSide && level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
             var hit = DuctHitHelper.resolve(ductBE.getBlockState(), ductBE, pos, hitResult);
             var side = hit.side();
-            if (!AttachmentPlacementHelper.canPlaceSideAttachment(ductBE, side)) {
+            boolean canPlace = requiresExternalSide
+                    ? AttachmentPlacementHelper.canPlaceTransferAttachment(ductBE, side)
+                    : AttachmentPlacementHelper.canPlaceFilterAttachment(ductBE, side);
+            if (!canPlace) {
                 return InteractionResult.PASS;
             }
 

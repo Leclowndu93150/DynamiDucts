@@ -17,7 +17,7 @@ public class FilterLogic {
 
     private final int slotCount;
     private final ItemStack[] filterStacks;
-    private boolean whitelist = true;
+    private boolean whitelist = false;
     private boolean matchComponents = false;
     private boolean matchModId = false;
     private int routeType = ROUTE_TYPE_NEAREST;

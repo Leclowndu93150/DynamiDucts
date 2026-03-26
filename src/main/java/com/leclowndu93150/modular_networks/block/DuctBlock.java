@@ -242,6 +242,7 @@ public abstract class DuctBlock extends Block implements EntityBlock {
                         buf.writeBoolean(conn.isServo());
                         buf.writeBoolean(conn.isFilter());
                         buf.writeBoolean(conn.isRetriever());
+                        buf.writeVarInt(conn.getRedstoneMode().ordinal());
                     });
                     return InteractionResult.SUCCESS;
                 }
@@ -262,14 +263,15 @@ public abstract class DuctBlock extends Block implements EntityBlock {
 
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (!level.isClientSide) {
-            return (lvl, pos, st, be) -> {
-                if (be instanceof DuctBlockEntity ductBE) {
+        return (lvl, pos, st, be) -> {
+            if (be instanceof DuctBlockEntity ductBE) {
+                if (lvl.isClientSide) {
+                    DuctBlockEntity.clientTick(lvl, pos, st, ductBE);
+                } else {
                     DuctBlockEntity.serverTick(lvl, pos, st, ductBE);
                 }
-            };
-        }
-        return null;
+            }
+        };
     }
 
     @Override

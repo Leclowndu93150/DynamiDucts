@@ -296,9 +296,8 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         }
 
         var fluidUnit = be.getDuctUnit(DuctToken.FLUID);
-        if (fluidUnit instanceof FluidDuctUnit fdu && fdu.isTransparent() && fdu.getGrid() != null) {
-            FluidGrid grid = fdu.getGrid();
-            FluidStack fluid = grid.getTank().getFluid();
+        if (fluidUnit instanceof FluidDuctUnit fdu && fdu.isTransparent()) {
+            FluidStack fluid = fdu.getVisualFluid();
             if (!fluid.isEmpty()) {
                 IClientFluidTypeExtensions fluidExt = IClientFluidTypeExtensions.of(fluid.getFluid());
                 ResourceLocation stillTex = fluidExt.getStillTexture(fluid);
@@ -360,13 +359,13 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                 int tierIndex = conn.getTier().index();
                 if (conn.isServo()) {
                     texPath = "block/duct/attachment/servo/servo_base_0_" + tierIndex;
-                    model = DuctModels.modelConnection[isAttachmentPowered(be)][i];
+                    model = DuctModels.modelConnection[getAttachmentModelIndex(conn)][i];
                 } else if (conn.isFilter()) {
                     texPath = "block/duct/attachment/filter/filter_" + tierIndex;
                     model = DuctModels.modelConnection[1][i];
                 } else if (conn.isRetriever()) {
                     texPath = "block/duct/attachment/retriever/retriever_base_0_" + tierIndex;
-                    model = DuctModels.modelConnection[isAttachmentPowered(be)][i];
+                    model = DuctModels.modelConnection[getAttachmentModelIndex(conn)][i];
                 } else {
                     continue;
                 }
@@ -606,8 +605,8 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         return itemRender ? RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS) : RenderTypeHelper.getEntityRenderType(RenderType.translucent(), false);
     }
 
-    private static int isAttachmentPowered(DuctBlockEntity be) {
-        return be.getLevel() != null && be.getLevel().hasNeighborSignal(be.getBlockPos()) ? 1 : 2;
+    private static int getAttachmentModelIndex(ConnectionBase connection) {
+        return connection.isActive() ? 1 : 2;
     }
 
     private static int argbToRgba(int color) {

@@ -3,7 +3,6 @@ package com.leclowndu93150.modular_networks.client.gui.widget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
@@ -49,7 +48,9 @@ public class SheetButton extends AbstractWidget {
         graphics.blit(texture, getX(), getY(), frame.u(), frame.v(), width, height, textureWidth, textureHeight);
 
         Component tooltip = tooltipSupplier.get();
-        setTooltip(tooltip == null ? null : Tooltip.create(tooltip));
+        if (tooltip != null && isMouseOver(mouseX, mouseY)) {
+            graphics.renderTooltip(Minecraft.getInstance().font, tooltip, mouseX, mouseY);
+        }
     }
 
     @Override

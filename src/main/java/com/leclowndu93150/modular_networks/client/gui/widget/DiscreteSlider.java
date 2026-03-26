@@ -1,7 +1,8 @@
 package com.leclowndu93150.modular_networks.client.gui.widget;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,7 +39,6 @@ public class DiscreteSlider extends AbstractSliderButton {
         this.tooltipFactory = tooltipFactory;
         this.messageFactory = messageFactory;
         updateMessage();
-        refreshTooltip();
     }
 
     public int getIntValue() {
@@ -51,7 +51,6 @@ public class DiscreteSlider extends AbstractSliderButton {
     public void setIntValue(int value) {
         this.value = normalize(value, minValue, maxValue);
         updateMessage();
-        refreshTooltip();
     }
 
     @Override
@@ -61,13 +60,11 @@ public class DiscreteSlider extends AbstractSliderButton {
         } else {
             setMessage(Component.empty());
         }
-        refreshTooltip();
     }
 
     @Override
     protected void applyValue() {
         onValueChanged.accept(getIntValue());
-        refreshTooltip();
     }
 
     @Override
@@ -76,11 +73,11 @@ public class DiscreteSlider extends AbstractSliderButton {
         onValueReleased.accept(getIntValue());
     }
 
-    private void refreshTooltip() {
-        if (tooltipFactory != null) {
-            setTooltip(Tooltip.create(tooltipFactory.apply(getIntValue())));
-        } else {
-            setTooltip(null);
+    @Override
+    public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.renderWidget(graphics, mouseX, mouseY, partialTick);
+        if (tooltipFactory != null && isMouseOver(mouseX, mouseY)) {
+            graphics.renderTooltip(Minecraft.getInstance().font, tooltipFactory.apply(getIntValue()), mouseX, mouseY);
         }
     }
 

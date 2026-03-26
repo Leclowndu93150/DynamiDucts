@@ -62,16 +62,6 @@ public class AttachmentMenu extends AbstractContainerMenu {
                     return;
                 }
                 values[index] = value;
-                switch (index) {
-                    case 0 -> filter.setWhitelist(value == 1);
-                    case 1 -> filter.setMatchComponents(value == 1);
-                    case 2 -> filter.setMatchModId(value == 1);
-                    case 3 -> attachment.setRedstoneMode(RedstoneMode.values()[value]);
-                    case 4 -> filter.setMaxStock(value);
-                    case 5 -> filter.setRouteType(value);
-                    default -> {
-                    }
-                }
             }
 
             @Override
@@ -121,6 +111,7 @@ public class AttachmentMenu extends AbstractContainerMenu {
         boolean isServo = buf.readBoolean();
         boolean isFilter = buf.readBoolean();
         boolean isRetriever = buf.readBoolean();
+        int redstoneModeOrdinal = buf.readVarInt();
 
         DuctBlockEntity ductBE = null;
         if (playerInv.player.level().getBlockEntity(pos) instanceof DuctBlockEntity be) {
@@ -141,6 +132,10 @@ public class AttachmentMenu extends AbstractContainerMenu {
             else if (isFilter) conn = new FilterItem(ductBE, side, tier);
             else if (isRetriever) conn = new RetrieverItem(ductBE, side, tier);
             else conn = new ServoItem(ductBE, side, tier);
+            conn.setRedstoneMode(RedstoneMode.values()[Math.min(redstoneModeOrdinal, RedstoneMode.values().length - 1)]);
+            ductBE.setAttachment(side, conn);
+        } else if (conn != null) {
+            conn.setRedstoneMode(RedstoneMode.values()[Math.min(redstoneModeOrdinal, RedstoneMode.values().length - 1)]);
         }
 
         if (ductBE == null || conn == null) return null;
@@ -232,6 +227,10 @@ public class AttachmentMenu extends AbstractContainerMenu {
 
     public void setLocalMatchModId(boolean matchModId) {
         data.set(2, matchModId ? 1 : 0);
+    }
+
+    public void setLocalRedstoneMode(int redstoneMode) {
+        data.set(3, redstoneMode);
     }
 
     public void setLocalMaxStock(int maxStock) {

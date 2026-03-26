@@ -7,6 +7,7 @@ import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import com.leclowndu93150.modular_networks.core.network.ConnectionType;
 import com.leclowndu93150.modular_networks.core.network.NetworkManager;
+import com.leclowndu93150.modular_networks.duct.item.ItemDuctUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -46,6 +47,14 @@ public abstract class DuctBlockEntity extends BlockEntity {
         for (Attachment att : be.attachments) {
             if (att != null) {
                 att.tick();
+            }
+        }
+    }
+
+    public static void clientTick(Level level, BlockPos pos, BlockState state, DuctBlockEntity be) {
+        for (DuctUnit<?, ?, ?> unit : be.ductUnits.values()) {
+            if (unit instanceof ItemDuctUnit itemUnit) {
+                itemUnit.tickClientTravelingItems();
             }
         }
     }
@@ -104,6 +113,17 @@ public abstract class DuctBlockEntity extends BlockEntity {
         }
     }
 
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level instanceof ServerLevel serverLevel) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+    }
+
     public void onPlaced() {
         if (level instanceof ServerLevel serverLevel) {
             for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
@@ -115,6 +135,9 @@ public abstract class DuctBlockEntity extends BlockEntity {
 
     public void onBroken() {
         for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            if (unit instanceof ItemDuctUnit itemUnit) {
+                itemUnit.dropAllItems();
+            }
             unit.invalidate();
         }
     }

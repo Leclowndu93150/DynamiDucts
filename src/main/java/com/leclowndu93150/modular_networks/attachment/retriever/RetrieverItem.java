@@ -65,7 +65,7 @@ public class RetrieverItem extends ConnectionBase {
 
                     ItemStack toSend = source.extractItem(slot, maxStack, false);
                     if (!toSend.isEmpty()) {
-                        if (!node.insertItem(toSend)) {
+                        if (!node.insertItem(toSend, route.insertionSide)) {
                             source.insertItem(slot, toSend, false);
                         }
                         return;

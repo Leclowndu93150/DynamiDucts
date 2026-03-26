@@ -20,9 +20,9 @@ public record AttachmentConfigPayload(
         int value
 ) implements CustomPacketPayload {
 
-    public static final int ACTION_TOGGLE_WHITELIST = 0;
-    public static final int ACTION_TOGGLE_MATCH_COMPONENTS = 1;
-    public static final int ACTION_TOGGLE_MATCH_MOD = 2;
+    public static final int ACTION_SET_WHITELIST = 0;
+    public static final int ACTION_SET_MATCH_COMPONENTS = 1;
+    public static final int ACTION_SET_MATCH_MOD = 2;
     public static final int ACTION_SET_REDSTONE_MODE = 3;
     public static final int ACTION_SET_MAX_STOCK = 4;
     public static final int ACTION_SET_ROUTE_TYPE = 5;
@@ -58,9 +58,9 @@ public record AttachmentConfigPayload(
                 Attachment att = ductBE.getAttachment(Direction.values()[payload.side]);
                 if (att instanceof ConnectionBase conn) {
                     switch (payload.action) {
-                        case ACTION_TOGGLE_WHITELIST -> conn.getFilter().setWhitelist(!conn.getFilter().isWhitelist());
-                        case ACTION_TOGGLE_MATCH_COMPONENTS -> conn.getFilter().setMatchComponents(!conn.getFilter().isMatchComponents());
-                        case ACTION_TOGGLE_MATCH_MOD -> conn.getFilter().setMatchModId(!conn.getFilter().isMatchModId());
+                        case ACTION_SET_WHITELIST -> conn.getFilter().setWhitelist(payload.value == 1);
+                        case ACTION_SET_MATCH_COMPONENTS -> conn.getFilter().setMatchComponents(payload.value == 1);
+                        case ACTION_SET_MATCH_MOD -> conn.getFilter().setMatchModId(payload.value == 1);
                         case ACTION_SET_REDSTONE_MODE -> conn.setRedstoneMode(RedstoneMode.values()[payload.value]);
                         case ACTION_SET_MAX_STOCK -> conn.getFilter().setMaxStock(payload.value);
                         case ACTION_SET_ROUTE_TYPE -> conn.getFilter().setRouteType(payload.value);

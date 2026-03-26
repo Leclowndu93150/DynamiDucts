@@ -16,6 +16,7 @@ import com.leclowndu93150.modular_networks.init.MNItems;
 import com.leclowndu93150.modular_networks.init.MNMenuTypes;
 import com.leclowndu93150.modular_networks.init.MNRecipeSerializers;
 import com.leclowndu93150.modular_networks.network.payload.AttachmentConfigPayload;
+import com.leclowndu93150.modular_networks.network.payload.ItemTravelSyncPayload;
 import com.leclowndu93150.modular_networks.network.payload.RelayConfigPayload;
 import com.leclowndu93150.modular_networks.screen.AttachmentScreen;
 import com.leclowndu93150.modular_networks.screen.RelayScreen;
@@ -69,6 +70,7 @@ public class ModularNetworks {
 
     private void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToClient(ItemTravelSyncPayload.TYPE, ItemTravelSyncPayload.STREAM_CODEC, ItemTravelSyncPayload::handle);
         registrar.playToServer(AttachmentConfigPayload.TYPE, AttachmentConfigPayload.STREAM_CODEC, AttachmentConfigPayload::handle);
         registrar.playToServer(RelayConfigPayload.TYPE, RelayConfigPayload.STREAM_CODEC, RelayConfigPayload::handle);
     }
