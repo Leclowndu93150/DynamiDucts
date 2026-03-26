@@ -3,6 +3,7 @@ package com.leclowndu93150.modular_networks.blockentity;
 import com.leclowndu93150.modular_networks.block.DuctBlock;
 import com.leclowndu93150.modular_networks.core.attachment.Attachment;
 import com.leclowndu93150.modular_networks.core.attachment.AttachmentRegistry;
+import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import com.leclowndu93150.modular_networks.core.network.ConnectionType;
@@ -146,12 +147,15 @@ public abstract class DuctBlockEntity extends BlockEntity {
         if (level instanceof ServerLevel serverLevel) {
             boolean connectionTypesChanged = normalizeDisconnectedBlockedSides();
             for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
-                if (unit.getGrid() != null) {
-                    unit.getGrid().markForRecreation();
-                }
                 unit.invalidate();
                 unit.updateCaches();
                 NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+            boolean powered = level.hasNeighborSignal(worldPosition);
+            for (Attachment att : attachments) {
+                if (att instanceof ConnectionBase conn) {
+                    conn.updatePowerState(powered);
+                }
             }
             level.invalidateCapabilities(worldPosition);
             if (connectionTypesChanged) {

@@ -52,11 +52,6 @@ public abstract class ConnectionBase extends Attachment {
 
     @Override
     public void tick() {
-        Level level = parent.getLevel();
-        if (level == null || level.isClientSide) return;
-
-        updatePowerState(level.hasNeighborSignal(parent.getBlockPos()));
-
         if (!isActive()) return;
 
         tickCounter++;

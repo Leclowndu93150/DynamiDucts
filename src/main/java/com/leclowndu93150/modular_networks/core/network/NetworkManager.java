@@ -3,7 +3,9 @@ package com.leclowndu93150.modular_networks.core.network;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import net.minecraft.server.level.ServerLevel;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -16,6 +18,7 @@ public class NetworkManager {
     private final Set<NetworkGrid<?>> gridsToAdd = new LinkedHashSet<>();
     private final Set<NetworkGrid<?>> gridsToRemove = new LinkedHashSet<>();
     private final Set<DuctUnit<?, ?, ?>> pendingFormation = new LinkedHashSet<>();
+    private final List<NetworkGrid<?>> toRecreate = new ArrayList<>();
 
     private NetworkManager(ServerLevel level) {
         this.level = level;
@@ -56,7 +59,6 @@ public class NetworkManager {
     public void tickEnd() {
         processFormation();
 
-        Set<NetworkGrid<?>> toRecreate = new LinkedHashSet<>();
         for (NetworkGrid<?> grid : activeGrids) {
             if (grid.needsRecreation()) {
                 toRecreate.add(grid);
@@ -65,8 +67,11 @@ public class NetworkManager {
             }
         }
 
-        for (NetworkGrid<?> grid : toRecreate) {
-            recreateGrid(grid);
+        if (!toRecreate.isEmpty()) {
+            for (NetworkGrid<?> grid : toRecreate) {
+                recreateGrid(grid);
+            }
+            toRecreate.clear();
         }
     }
 
@@ -74,10 +79,10 @@ public class NetworkManager {
     private void processFormation() {
         if (pendingFormation.isEmpty()) return;
 
-        Set<DuctUnit<?, ?, ?>> toForm = new LinkedHashSet<>(pendingFormation);
+        DuctUnit<?, ?, ?>[] units = pendingFormation.toArray(new DuctUnit<?, ?, ?>[0]);
         pendingFormation.clear();
 
-        for (DuctUnit<?, ?, ?> unit : toForm) {
+        for (DuctUnit<?, ?, ?> unit : units) {
             if (unit.getGrid() != null) continue;
             if (unit.getParent().isRemoved()) continue;
 

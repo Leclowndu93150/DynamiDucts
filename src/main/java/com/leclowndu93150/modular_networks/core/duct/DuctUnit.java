@@ -78,6 +78,7 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
 
         if (parent.getLevel() == null) return;
 
+        BlockPos.MutableBlockPos neighbor = new BlockPos.MutableBlockPos();
         for (Direction dir : Direction.values()) {
             ductCache[dir.ordinal()] = null;
             tileCache[dir.ordinal()] = null;
@@ -85,7 +86,7 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
             ConnectionType ct = parent.getConnectionType(dir);
             if (ct == ConnectionType.BLOCKED) continue;
 
-            BlockPos neighbor = parent.getBlockPos().relative(dir);
+            neighbor.setWithOffset(parent.getBlockPos(), dir);
             if (!parent.getLevel().isLoaded(neighbor)) continue;
 
             if (parent.getLevel().getBlockEntity(neighbor) instanceof DuctBlockEntity otherDuct) {

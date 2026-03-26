@@ -30,22 +30,22 @@ public class RouteCache {
         List<Route> routes = getRoutes(origin, allNodes);
         if (routes.isEmpty()) return routes;
 
+        if (routeType == FilterLogic.ROUTE_TYPE_NEAREST) {
+            return routes;
+        }
+
         List<Route> sorted = new ArrayList<>(routes);
         switch (routeType) {
-            case FilterLogic.ROUTE_TYPE_NEAREST -> sorted.sort(Comparator.comparingInt(r -> r.pathWeight));
             case FilterLogic.ROUTE_TYPE_FURTHEST -> sorted.sort(Comparator.comparingInt(r -> -r.pathWeight));
             case FilterLogic.ROUTE_TYPE_RANDOM -> Collections.shuffle(sorted);
             case FilterLogic.ROUTE_TYPE_ROUND_ROBIN -> {
-                sorted.sort(Comparator.comparingInt(r -> r.pathWeight));
-                if (!sorted.isEmpty()) {
-                    int offset = roundRobinIndex % sorted.size();
-                    roundRobinIndex++;
-                    List<Route> rotated = new ArrayList<>(sorted.size());
-                    for (int i = 0; i < sorted.size(); i++) {
-                        rotated.add(sorted.get((i + offset) % sorted.size()));
-                    }
-                    sorted = rotated;
+                int offset = roundRobinIndex % sorted.size();
+                roundRobinIndex++;
+                List<Route> rotated = new ArrayList<>(sorted.size());
+                for (int i = 0; i < sorted.size(); i++) {
+                    rotated.add(sorted.get((i + offset) % sorted.size()));
                 }
+                sorted = rotated;
             }
         }
         return sorted;
@@ -53,45 +53,41 @@ public class RouteCache {
 
     public Route getRouteBetween(ItemDuctUnit from, ItemDuctUnit to, Direction insertionSide, Set<ItemDuctUnit> allNodes) {
         List<Route> routes = getRoutes(from, allNodes);
+        Route fallback = null;
         for (Route route : routes) {
-            if (route.destination.equals(to.getPos()) && route.insertionSide == insertionSide) {
-                return route;
-            }
+            if (!route.destination.equals(to.getPos())) continue;
+            if (route.insertionSide == insertionSide) return route;
+            if (fallback == null) fallback = route;
         }
-        for (Route route : routes) {
-            if (route.destination.equals(to.getPos())) {
-                return route;
-            }
-        }
-        return null;
+        return fallback;
     }
 
     private void rebuildAll(Set<ItemDuctUnit> allNodes) {
         routesByOrigin.clear();
         for (ItemDuctUnit node : allNodes) {
-            List<Route> routes = computeRoutes(node, allNodes);
+            List<Route> routes = computeRoutes(node);
             if (!routes.isEmpty()) {
                 routesByOrigin.put(node.getPos(), routes);
             }
         }
     }
 
-    private List<Route> computeRoutes(ItemDuctUnit source, Set<ItemDuctUnit> allNodes) {
+    private List<Route> computeRoutes(ItemDuctUnit source) {
         List<Route> routes = new ArrayList<>();
         Map<BlockPos, Integer> visited = new HashMap<>();
-        Queue<PathNode> queue = new LinkedList<>();
+        Deque<PathNode> queue = new ArrayDeque<>();
 
         visited.put(source.getPos(), 0);
-        queue.add(new PathNode(source, new ArrayList<>(), 0));
+        queue.add(new PathNode(source, null, null, 0));
 
         while (!queue.isEmpty()) {
             PathNode current = queue.poll();
 
             if (current.unit != source && current.unit.isNode()) {
+                List<Direction> path = buildPath(current);
                 for (Direction dir : Direction.values()) {
                     if (current.unit.getTileCache(dir) != null) {
-                        List<Direction> fullPath = new ArrayList<>(current.path);
-                        routes.add(new Route(current.unit.getPos(), dir, fullPath, current.weight));
+                        routes.add(new Route(current.unit.getPos(), dir, path, current.weight));
                     }
                 }
             }
@@ -105,9 +101,7 @@ public class RouteCache {
                 if (existingWeight != null && existingWeight <= newWeight) continue;
 
                 visited.put(neighbor.getPos(), newWeight);
-                List<Direction> newPath = new ArrayList<>(current.path);
-                newPath.add(dir);
-                queue.add(new PathNode(neighbor, newPath, newWeight));
+                queue.add(new PathNode(neighbor, current, dir, newWeight));
             }
         }
 
@@ -115,6 +109,28 @@ public class RouteCache {
         return routes;
     }
 
-    private record PathNode(ItemDuctUnit unit, List<Direction> path, int weight) {
+    private static List<Direction> buildPath(PathNode node) {
+        List<Direction> path = new ArrayList<>();
+        PathNode current = node;
+        while (current.parent != null) {
+            path.add(current.direction);
+            current = current.parent;
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    private static final class PathNode {
+        final ItemDuctUnit unit;
+        final PathNode parent;
+        final Direction direction;
+        final int weight;
+
+        PathNode(ItemDuctUnit unit, PathNode parent, Direction direction, int weight) {
+            this.unit = unit;
+            this.parent = parent;
+            this.direction = direction;
+            this.weight = weight;
+        }
     }
 }

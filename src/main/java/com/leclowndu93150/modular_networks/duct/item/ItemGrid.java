@@ -5,8 +5,6 @@ import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
 import com.leclowndu93150.modular_networks.core.network.NetworkGrid;
 import com.leclowndu93150.modular_networks.core.network.Route;
 import com.leclowndu93150.modular_networks.core.network.RouteCache;
-import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
-import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.network.payload.ItemTravelSyncPayload;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -17,17 +15,15 @@ import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
 
     private static final int MAX_SYNCED_ITEMS_PER_DUCT = 16;
 
     private final RouteCache routeCache = new RouteCache();
+    private final Map<BlockPos, ItemDuctUnit> nodesByPos = new HashMap<>();
+    private final Set<ItemDuctUnit> dirtyUnits = new HashSet<>();
 
     public ItemGrid(ServerLevel level) {
         super(level);
@@ -37,6 +33,32 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
     public void onMajorGridChange() {
         super.onMajorGridChange();
         routeCache.markDirty();
+        rebuildNodesByPos();
+    }
+
+    @Override
+    public void addNode(ItemDuctUnit unit) {
+        super.addNode(unit);
+        nodesByPos.put(unit.getPos(), unit);
+    }
+
+    @Override
+    public void removeBlock(ItemDuctUnit unit) {
+        nodesByPos.remove(unit.getPos());
+        super.removeBlock(unit);
+    }
+
+    @Override
+    public void removeNode(ItemDuctUnit unit) {
+        nodesByPos.remove(unit.getPos());
+        super.removeNode(unit);
+    }
+
+    private void rebuildNodesByPos() {
+        nodesByPos.clear();
+        for (ItemDuctUnit node : nodeSet) {
+            nodesByPos.put(node.getPos(), node);
+        }
     }
 
     @Override
@@ -46,73 +68,69 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
     }
 
     private void tickAllDuctItems() {
-        Set<BlockPos> dirtyPositions = new HashSet<>();
+        dirtyUnits.clear();
 
-        for (ItemDuctUnit unit : getAllUnits()) {
-            unit.flushItemsToAdd();
+        for (ItemDuctUnit unit : nodeSet) tickUnit(unit);
+        for (ItemDuctUnit unit : idleSet) tickUnit(unit);
 
-            Iterator<TravelingItem> it = unit.getMyItems().iterator();
-            while (it.hasNext()) {
-                TravelingItem item = it.next();
-                TravelingItem.TickResult result = item.tick();
+        for (ItemDuctUnit unit : nodeSet) unit.flushItemsToAdd();
+        for (ItemDuctUnit unit : idleSet) unit.flushItemsToAdd();
 
-                switch (result) {
-                    case TRAVELING -> {}
-                    case ADVANCE -> {
-                        Direction dir = item.getCurrentDirection();
-                        ItemDuctUnit nextDuct = unit.getDuctNeighbor(dir);
+        for (ItemDuctUnit unit : dirtyUnits) {
+            syncTravelersAt(unit);
+        }
+        dirtyUnits.clear();
+    }
 
-                        if (nextDuct != null && !passesFilter(unit, dir, item.stack)) {
-                            dirtyPositions.add(unit.getPos());
-                            bounceItem(item, unit);
-                            it.remove();
-                        } else if (nextDuct != null) {
-                            dirtyPositions.add(unit.getPos());
-                            item.advance();
-                            it.remove();
-                            nextDuct.transferItem(item);
-                            dirtyPositions.add(nextDuct.getPos());
-                        } else if (item.isAtEnd()) {
-                            dirtyPositions.add(unit.getPos());
-                            item.advance();
-                            deliverItem(item, unit);
-                            it.remove();
-                        } else {
-                            dirtyPositions.add(unit.getPos());
-                            bounceItem(item, unit);
-                            it.remove();
-                        }
-                    }
-                    case ARRIVED -> {
-                        dirtyPositions.add(unit.getPos());
+    private void tickUnit(ItemDuctUnit unit) {
+        unit.flushItemsToAdd();
+
+        Iterator<TravelingItem> it = unit.getMyItems().iterator();
+        while (it.hasNext()) {
+            TravelingItem item = it.next();
+            TravelingItem.TickResult result = item.tick();
+
+            switch (result) {
+                case TRAVELING -> {}
+                case ADVANCE -> {
+                    Direction dir = item.getCurrentDirection();
+                    ItemDuctUnit nextDuct = unit.getDuctNeighbor(dir);
+
+                    if (nextDuct != null && !passesFilter(unit, dir, item.stack)) {
+                        dirtyUnits.add(unit);
+                        bounceItem(item, unit);
+                        it.remove();
+                    } else if (nextDuct != null) {
+                        dirtyUnits.add(unit);
+                        item.advance();
+                        it.remove();
+                        nextDuct.transferItem(item);
+                        dirtyUnits.add(nextDuct);
+                    } else if (item.isAtEnd()) {
+                        dirtyUnits.add(unit);
+                        item.advance();
                         deliverItem(item, unit);
+                        it.remove();
+                    } else {
+                        dirtyUnits.add(unit);
+                        bounceItem(item, unit);
                         it.remove();
                     }
                 }
+                case ARRIVED -> {
+                    dirtyUnits.add(unit);
+                    deliverItem(item, unit);
+                    it.remove();
+                }
             }
         }
-
-        for (ItemDuctUnit unit : getAllUnits()) {
-            unit.flushItemsToAdd();
-        }
-
-        dirtyPositions.forEach(this::syncTravelersAt);
-    }
-
-    private List<ItemDuctUnit> getAllUnits() {
-        List<ItemDuctUnit> all = new ArrayList<>(nodeSet.size() + idleSet.size());
-        all.addAll(nodeSet);
-        all.addAll(idleSet);
-        return all;
     }
 
     private void deliverItem(TravelingItem tItem, ItemDuctUnit currentUnit) {
-        BlockPos destPos = tItem.route.destination;
+        ItemDuctUnit destNode = nodesByPos.get(tItem.route.destination);
 
-        for (ItemDuctUnit node : nodeSet) {
-            if (!node.getPos().equals(destPos)) continue;
-
-            IItemHandler target = node.getTileCache(tItem.route.insertionSide);
+        if (destNode != null) {
+            IItemHandler target = destNode.getTileCache(tItem.route.insertionSide);
             if (target != null) {
                 ItemStack remainder = insertIntoHandler(target, tItem.stack, false);
                 if (!remainder.isEmpty()) {
@@ -135,20 +153,19 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         for (Route route : routes) {
             if (route.destination.equals(item.route.destination)) continue;
 
-            for (ItemDuctUnit node : nodeSet) {
-                if (!node.getPos().equals(route.destination)) continue;
+            ItemDuctUnit node = nodesByPos.get(route.destination);
+            if (node == null) continue;
 
-                IItemHandler target = node.getTileCache(route.insertionSide);
-                if (target == null) continue;
+            IItemHandler target = node.getTileCache(route.insertionSide);
+            if (target == null) continue;
 
-                ItemStack simulated = insertIntoHandler(target, item.stack.copy(), true);
-                int canInsert = item.stack.getCount() - simulated.getCount();
-                if (canInsert <= 0) continue;
+            ItemStack simulated = insertIntoHandler(target, item.stack.copy(), true);
+            int canInsert = item.stack.getCount() - simulated.getCount();
+            if (canInsert <= 0) continue;
 
-                item.reroute(route);
-                currentUnit.addTravelingItem(item);
-                return;
-            }
+            item.reroute(route);
+            currentUnit.addTravelingItem(item);
+            return;
         }
 
         item.reverse();
@@ -176,34 +193,26 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         if (routes.isEmpty()) return false;
 
         for (Route route : routes) {
-            for (ItemDuctUnit node : nodeSet) {
-                if (!node.getPos().equals(route.destination)) continue;
+            ItemDuctUnit node = nodesByPos.get(route.destination);
+            if (node == null) continue;
 
-                IItemHandler target = node.getTileCache(route.insertionSide);
-                if (target == null) continue;
+            IItemHandler target = node.getTileCache(route.insertionSide);
+            if (target == null) continue;
 
-                ItemStack simulated = insertIntoHandler(target, stack.copy(), true);
-                int canInsert = stack.getCount() - simulated.getCount();
-                if (canInsert <= 0) continue;
+            ItemStack simulated = insertIntoHandler(target, stack.copy(), true);
+            int canInsert = stack.getCount() - simulated.getCount();
+            if (canInsert <= 0) continue;
 
-                ItemStack toSend = stack.split(canInsert);
-                TravelingItem tItem = new TravelingItem(toSend, route, origin.getPos(), entrySide, speed);
-                origin.addTravelingItem(tItem);
-                syncTravelersAt(origin.getPos());
-                return true;
-            }
+            ItemStack toSend = stack.split(canInsert);
+            TravelingItem tItem = new TravelingItem(toSend, route, origin.getPos(), entrySide, speed);
+            origin.addTravelingItem(tItem);
+            syncTravelersAt(origin);
+            return true;
         }
         return false;
     }
 
-    private void syncTravelersAt(BlockPos pos) {
-        if (!(level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE)) {
-            return;
-        }
-        if (!(ductBE.getDuctUnit(DuctToken.ITEM) instanceof ItemDuctUnit itemUnit)) {
-            return;
-        }
-
+    private void syncTravelersAt(ItemDuctUnit itemUnit) {
         List<TravelingItemSnapshot> snapshots = new ArrayList<>();
         for (TravelingItem item : itemUnit.getMyItems()) {
             snapshots.add(TravelingItemSnapshot.fromTravelingItem(item));
@@ -215,6 +224,7 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         }
 
         itemUnit.setServerTravelingItems(snapshots);
+        BlockPos pos = itemUnit.getPos();
         PacketDistributor.sendToPlayersTrackingChunk(level, new ChunkPos(pos), new ItemTravelSyncPayload(pos, snapshots));
     }
 

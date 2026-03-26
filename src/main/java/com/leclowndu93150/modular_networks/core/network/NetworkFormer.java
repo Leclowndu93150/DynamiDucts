@@ -5,7 +5,7 @@ import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 
 @SuppressWarnings("unchecked")
@@ -20,7 +20,7 @@ public class NetworkFormer {
             grid.addNode(startUnit);
         }
 
-        Queue<T> toCheck = new LinkedList<>();
+        Queue<T> toCheck = new ArrayDeque<>();
         toCheck.add(startUnit);
 
         while (!toCheck.isEmpty()) {
