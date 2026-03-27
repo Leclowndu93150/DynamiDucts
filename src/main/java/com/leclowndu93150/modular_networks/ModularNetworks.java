@@ -13,13 +13,18 @@ import com.leclowndu93150.modular_networks.init.MNCreativeTab;
 import com.leclowndu93150.modular_networks.init.MNDataComponents;
 import com.leclowndu93150.modular_networks.init.MNAttachments;
 import com.leclowndu93150.modular_networks.init.MNItems;
+import com.leclowndu93150.modular_networks.init.MNEntityTypes;
 import com.leclowndu93150.modular_networks.init.MNMenuTypes;
 import com.leclowndu93150.modular_networks.init.MNRecipeSerializers;
 import com.leclowndu93150.modular_networks.network.payload.AttachmentConfigPayload;
 import com.leclowndu93150.modular_networks.network.payload.ItemTravelSyncPayload;
 import com.leclowndu93150.modular_networks.network.payload.RelayConfigPayload;
+import com.leclowndu93150.modular_networks.network.payload.TransportRenamePayload;
+import com.leclowndu93150.modular_networks.network.payload.TransportRequestPayload;
 import com.leclowndu93150.modular_networks.screen.AttachmentScreen;
 import com.leclowndu93150.modular_networks.screen.RelayScreen;
+import com.leclowndu93150.modular_networks.screen.TransportConfigScreen;
+import com.leclowndu93150.modular_networks.screen.TransportScreen;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -60,6 +65,7 @@ public class ModularNetworks {
         MNItems.ITEMS.register(modEventBus);
         MNBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         MNMenuTypes.MENU_TYPES.register(modEventBus);
+        MNEntityTypes.ENTITY_TYPES.register(modEventBus);
         MNCreativeTab.CREATIVE_TABS.register(modEventBus);
         MNRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
 
@@ -73,6 +79,8 @@ public class ModularNetworks {
         registrar.playToClient(ItemTravelSyncPayload.TYPE, ItemTravelSyncPayload.STREAM_CODEC, ItemTravelSyncPayload::handle);
         registrar.playToServer(AttachmentConfigPayload.TYPE, AttachmentConfigPayload.STREAM_CODEC, AttachmentConfigPayload::handle);
         registrar.playToServer(RelayConfigPayload.TYPE, RelayConfigPayload.STREAM_CODEC, RelayConfigPayload::handle);
+        registrar.playToServer(TransportRenamePayload.TYPE, TransportRenamePayload.STREAM_CODEC, TransportRenamePayload::handle);
+        registrar.playToServer(TransportRequestPayload.TYPE, TransportRequestPayload.STREAM_CODEC, TransportRequestPayload::handle);
     }
 
     @EventBusSubscriber(modid = MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -81,6 +89,8 @@ public class ModularNetworks {
         public static void registerScreens(RegisterMenuScreensEvent event) {
             event.register(MNMenuTypes.ATTACHMENT_MENU.get(), AttachmentScreen::new);
             event.register(MNMenuTypes.RELAY_MENU.get(), RelayScreen::new);
+            event.register(MNMenuTypes.TRANSPORT_MENU.get(), TransportScreen::new);
+            event.register(MNMenuTypes.TRANSPORT_CONFIG_MENU.get(), TransportConfigScreen::new);
         }
 
         @SubscribeEvent
@@ -121,6 +131,8 @@ public class ModularNetworks {
 
             ductRenderer(event, MNBlockEntities.STRUCTURAL_DUCT, false);
             ductRenderer(event, MNBlockEntities.LUX_DUCT, false);
+
+            event.registerEntityRenderer(MNEntityTypes.TRANSPORT.get(), net.minecraft.client.renderer.entity.NoopRenderer::new);
         }
 
         @SubscribeEvent

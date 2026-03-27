@@ -56,28 +56,35 @@ public abstract class DuctBlock extends Block implements EntityBlock {
             Direction.DOWN, DOWN
     );
 
-    private static final float DUCT_RADIUS = 3.0F / 16.0F;
-    private static final VoxelShape CENTER = Block.box(5, 5, 5, 11, 11, 11);
-    private static final VoxelShape[] ARM_SHAPES = new VoxelShape[6];
-    private static final VoxelShape[] SHAPE_CACHE = new VoxelShape[64];
+    protected static final VoxelShape[] SHAPE_SMALL = buildShapeCache(5, 11);
+    protected static final VoxelShape[] SHAPE_LARGE = buildShapeCache(4, 12);
+    protected static final VoxelShape[] SHAPE_TRANSPORT = buildShapeCache(3, 13);
 
-    static {
-        ARM_SHAPES[Direction.DOWN.ordinal()] = Block.box(5, 0, 5, 11, 5, 11);
-        ARM_SHAPES[Direction.UP.ordinal()] = Block.box(5, 11, 5, 11, 16, 11);
-        ARM_SHAPES[Direction.NORTH.ordinal()] = Block.box(5, 5, 0, 11, 11, 5);
-        ARM_SHAPES[Direction.SOUTH.ordinal()] = Block.box(5, 5, 11, 11, 11, 16);
-        ARM_SHAPES[Direction.WEST.ordinal()] = Block.box(0, 5, 5, 5, 11, 11);
-        ARM_SHAPES[Direction.EAST.ordinal()] = Block.box(11, 5, 5, 16, 11, 11);
+    private static VoxelShape[] buildShapeCache(double min, double max) {
+        VoxelShape center = Block.box(min, min, min, max, max, max);
+        VoxelShape[] arms = new VoxelShape[6];
+        arms[Direction.DOWN.ordinal()] = Block.box(min, 0, min, max, min, max);
+        arms[Direction.UP.ordinal()] = Block.box(min, max, min, max, 16, max);
+        arms[Direction.NORTH.ordinal()] = Block.box(min, min, 0, max, max, min);
+        arms[Direction.SOUTH.ordinal()] = Block.box(min, min, max, max, max, 16);
+        arms[Direction.WEST.ordinal()] = Block.box(0, min, min, min, max, max);
+        arms[Direction.EAST.ordinal()] = Block.box(max, min, min, 16, max, max);
 
+        VoxelShape[] cache = new VoxelShape[64];
         for (int i = 0; i < 64; i++) {
-            VoxelShape shape = CENTER;
+            VoxelShape shape = center;
             for (int j = 0; j < 6; j++) {
                 if ((i & (1 << j)) != 0) {
-                    shape = Shapes.or(shape, ARM_SHAPES[j]);
+                    shape = Shapes.or(shape, arms[j]);
                 }
             }
-            SHAPE_CACHE[i] = shape;
+            cache[i] = shape;
         }
+        return cache;
+    }
+
+    protected VoxelShape[] getShapeCache() {
+        return SHAPE_SMALL;
     }
 
     protected DuctBlock(Properties properties) {
@@ -122,7 +129,7 @@ public abstract class DuctBlock extends Block implements EntityBlock {
     }
 
     private VoxelShape getMultipartShape(BlockState state, BlockGetter level, BlockPos pos) {
-        VoxelShape shape = SHAPE_CACHE[getShapeIndex(state)];
+        VoxelShape shape = getShapeCache()[getShapeIndex(state)];
         if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
             for (Direction dir : Direction.values()) {
                 if (ductBE.getAttachment(dir) instanceof Cover) {

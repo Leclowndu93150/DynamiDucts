@@ -9,6 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 public class FluidDuctBlock extends DuctBlock {
@@ -38,6 +39,11 @@ public class FluidDuctBlock extends DuctBlock {
 
     public FluidDuctBlockEntity.Tier getTier() {
         return tier;
+    }
+
+    @Override
+    protected VoxelShape[] getShapeCache() {
+        return tier == FluidDuctBlockEntity.Tier.SUPER ? SHAPE_LARGE : SHAPE_SMALL;
     }
 
     @Override

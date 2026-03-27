@@ -7,7 +7,9 @@ import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.attachment.Attachment;
 import com.leclowndu93150.modular_networks.core.attachment.AttachmentTier;
 import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
+import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.network.ConnectionType;
+import com.leclowndu93150.modular_networks.duct.transport.TransportDuctUnit;
 import com.leclowndu93150.modular_networks.init.MNItems;
 import com.leclowndu93150.modular_networks.mixin.UseOnContextAccessor;
 import net.minecraft.core.BlockPos;
@@ -54,6 +56,12 @@ public class WrenchItem extends Item {
 
             if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
                 dismantleDuct(level, pos, ductBE);
+                return InteractionResult.SUCCESS;
+            }
+
+            if (ductBE.getDuctUnit(DuctToken.TRANSPORT) instanceof TransportDuctUnit transportUnit) {
+                transportUnit.trySetEndpoint(side);
+                playPopSound(level, pos);
                 return InteractionResult.SUCCESS;
             }
 

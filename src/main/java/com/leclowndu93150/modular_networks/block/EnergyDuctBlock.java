@@ -9,6 +9,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 import java.util.function.BiFunction;
@@ -37,6 +38,12 @@ public class EnergyDuctBlock extends DuctBlock {
 
     public EnergyDuctBlockEntity.Tier getTier() {
         return tier;
+    }
+
+    @Override
+    protected VoxelShape[] getShapeCache() {
+        return (tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR || tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR_EMPTY)
+                ? SHAPE_LARGE : SHAPE_SMALL;
     }
 
     @Override

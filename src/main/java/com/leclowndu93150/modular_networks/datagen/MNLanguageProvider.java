@@ -168,5 +168,11 @@ public class MNLanguageProvider extends LanguageProvider {
         add("info.modular_networks.relay.threshold", "Threshold: %s");
         add("info.modular_networks.relay.relayRS", "Relay Power: %s");
         add("info.modular_networks.relay.gridRS", "Duct Power: %s");
+
+        add("gui.modular_networks.transport.title", "Select Destination");
+        add("gui.modular_networks.transport.config", "Configure");
+        add("gui.modular_networks.transport.noDestinations", "No destinations available.");
+        add("gui.modular_networks.transport.unnamed", "Unnamed");
+        add("entity.modular_networks.transport", "Transport");
     }
 }

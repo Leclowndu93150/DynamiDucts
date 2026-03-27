@@ -110,15 +110,15 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
             ));
         }
 
-        int tabX = leftPos + imageWidth + 2;
-        infoTab = addRenderableWidget(new InfoSideTabWidget(
-                tabX, topPos + 4,
-                this::getInfoTabLines
-        ));
+        int tabX = leftPos + imageWidth;
         redstoneTab = addRenderableWidget(new RedstoneControlTabWidget(
                 tabX, topPos + 32,
                 () -> RedstoneMode.values()[Math.min(menu.getRedstoneMode(), RedstoneMode.values().length - 1)],
                 this::setRedstoneMode
+        ));
+        infoTab = addRenderableWidget(new InfoSideTabWidget(
+                tabX, topPos + 4,
+                this::getInfoTabLines
         ));
     }
 

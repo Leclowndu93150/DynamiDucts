@@ -3,6 +3,8 @@ package com.leclowndu93150.modular_networks.init;
 import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.menu.AttachmentMenu;
 import com.leclowndu93150.modular_networks.menu.RelayMenu;
+import com.leclowndu93150.modular_networks.menu.TransportConfigMenu;
+import com.leclowndu93150.modular_networks.menu.TransportMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
@@ -19,4 +21,10 @@ public class MNMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<RelayMenu>> RELAY_MENU =
             MENU_TYPES.register("relay", () -> IMenuTypeExtension.create(RelayMenu::fromNetwork));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<TransportMenu>> TRANSPORT_MENU =
+            MENU_TYPES.register("transport", () -> IMenuTypeExtension.create(TransportMenu::fromNetwork));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<TransportConfigMenu>> TRANSPORT_CONFIG_MENU =
+            MENU_TYPES.register("transport_config", () -> IMenuTypeExtension.create(TransportConfigMenu::fromNetwork));
 }
