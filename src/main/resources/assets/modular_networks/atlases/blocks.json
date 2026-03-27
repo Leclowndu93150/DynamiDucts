@@ -29,6 +29,11 @@
       "type": "directory",
       "source": "block/duct/connection",
       "prefix": "modular_networks:block/duct/connection/"
+    },
+    {
+      "type": "directory",
+      "source": "block/fluid",
+      "prefix": "modular_networks:block/fluid/"
     }
   ]
 }

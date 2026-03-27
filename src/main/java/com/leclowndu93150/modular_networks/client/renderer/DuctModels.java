@@ -5,6 +5,7 @@ import codechicken.lib.render.CCModel;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Rotation;
 import codechicken.lib.vec.Scale;
+import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.Vector3;
 import codechicken.lib.vec.Vertex5;
 
@@ -22,6 +23,7 @@ public class DuctModels {
     public static CCModel[] modelOpaqueTubes;
     public static CCModel[] modelTransTubes;
     public static CCModel[] modelFluidTubes;
+    public static CCModel[][] modelFluid;
     public static CCModel[] modelLargeTubes;
     public static CCModel[] modelFrameConnection;
     public static CCModel[] modelFrame;
@@ -40,6 +42,7 @@ public class DuctModels {
             generateCenter();
             generateConnections();
             generateTubes();
+            generateFluidModels();
             generateFrames();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to generate duct models.", e);
@@ -95,6 +98,35 @@ public class DuctModels {
         modelTransTubes = genTubeModels(W, false);
         modelFluidTubes = genTubeModels(W * SMALL_INNER_SCALE, false);
         modelLargeTubes = genTubeModels(0.21875F, true);
+    }
+
+    private static void generateFluidModels() {
+        modelFluid = new CCModel[6][7];
+
+        for (int level = 1; level < 7; level++) {
+            double d1 = 0.47 - 0.025 * level;
+            double d2 = 0.53 + 0.025 * level;
+            double d3 = 0.32 + 0.06 * level;
+            double c1 = 0.32;
+            double c2 = 0.68;
+            double[][] boxes = new double[][]{
+                    {d1, 0, d1, d2, c1, d2},
+                    {d1, d3, d1, d2, 1, d2},
+                    {c1, c1, 0, c2, d3, c1},
+                    {c1, c1, c2, c2, d3, 1},
+                    {0, c1, c1, c1, d3, c2},
+                    {c2, c1, c1, 1, d3, c2},
+                    {c1, c1, c1, c2, d3, c2}
+            };
+
+            for (int side = 0; side < 7; side++) {
+                modelFluid[level - 1][side] = CCModel.quadModel(24)
+                        .generateBlock(0, boxes[side][0], boxes[side][1], boxes[side][2], boxes[side][3], boxes[side][4], boxes[side][5])
+                        .apply(new Translation(-0.5, -0.5, -0.5))
+                        .computeNormals()
+                        .shrinkUVs(RENDER_OFFSET);
+            }
+        }
     }
 
     private static void generateFrames() {

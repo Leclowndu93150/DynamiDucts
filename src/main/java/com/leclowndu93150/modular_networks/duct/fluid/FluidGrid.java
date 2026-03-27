@@ -14,6 +14,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     protected final int capacityPerDuct;
     protected final int throughputPerDuct;
     private FluidStack lastSyncedFluid = FluidStack.EMPTY;
+    private int lastSyncedRenderLevel = -1;
 
     public FluidGrid(ServerLevel level, int capacityPerDuct, int throughputPerDuct) {
         super(level);
@@ -66,6 +67,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     public void onMajorGridChange() {
         super.onMajorGridChange();
         lastSyncedFluid = FluidStack.EMPTY;
+        lastSyncedRenderLevel = -1;
     }
 
     @Override
@@ -139,17 +141,48 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
     private void syncVisualIfChanged() {
         FluidStack current = tank.getFluid();
-        if (isSameVisual(lastSyncedFluid, current)) return;
+        int renderLevel = getRenderLevel();
+        if (isSameVisual(lastSyncedFluid, current) && lastSyncedRenderLevel == renderLevel) return;
 
         lastSyncedFluid = current.copy();
-        for (FluidDuctUnit unit : nodeSet) syncVisualToClient(unit, current);
-        for (FluidDuctUnit unit : idleSet) syncVisualToClient(unit, current);
+        lastSyncedRenderLevel = renderLevel;
+
+        FluidStack renderFluid = current.isEmpty() || renderLevel <= 0
+                ? FluidStack.EMPTY
+                : current.copyWithAmount(renderLevel);
+
+        for (FluidDuctUnit unit : nodeSet) syncVisualToClient(unit, renderFluid);
+        for (FluidDuctUnit unit : idleSet) syncVisualToClient(unit, renderFluid);
     }
 
     private void syncVisualToClient(FluidDuctUnit unit, FluidStack fluid) {
         unit.setRenderFluid(fluid);
         unit.getParent().setChanged();
         level.sendBlockUpdated(unit.getPos(), unit.getParent().getBlockState(), unit.getParent().getBlockState(), Block.UPDATE_CLIENTS);
+    }
+
+    private int getRenderLevel() {
+        if (tank.isEmpty() || tank.getTankCapacity(0) <= 0) {
+            return 0;
+        }
+
+        long fullPercent = 10000L * tank.getFluid().getAmount() / tank.getTankCapacity(0);
+        if (fullPercent <= 700) {
+            return 1;
+        }
+        if (fullPercent <= 2500) {
+            return 2;
+        }
+        if (fullPercent <= 4500) {
+            return 3;
+        }
+        if (fullPercent <= 6500) {
+            return 4;
+        }
+        if (fullPercent <= 8500) {
+            return 5;
+        }
+        return 6;
     }
 
     private static boolean hasServoOnSide(FluidDuctUnit unit, Direction side) {

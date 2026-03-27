@@ -4,6 +4,7 @@ import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.block.EnergyDuctBlock;
 import com.leclowndu93150.modular_networks.block.FluidDuctBlock;
 import com.leclowndu93150.modular_networks.block.ItemDuctBlock;
+import com.leclowndu93150.modular_networks.block.LuxDuctBlock;
 import com.leclowndu93150.modular_networks.block.StructuralDuctBlock;
 import com.leclowndu93150.modular_networks.block.TransportDuctBlock;
 import com.leclowndu93150.modular_networks.blockentity.EnergyDuctBlockEntity;
@@ -94,7 +95,6 @@ public class MNBlocks {
 
     public static final DeferredBlock<StructuralDuctBlock> STRUCTURAL_DUCT = BLOCKS.register("structural_duct",
             () -> new StructuralDuctBlock(ductProps()));
-    public static final DeferredBlock<StructuralDuctBlock> LUX_DUCT = BLOCKS.register("lux_duct",
-            () -> new StructuralDuctBlock(ductProps().lightLevel(state -> 15))
-                    .withBlockEntityType(() -> MNBlockEntities.LUX_DUCT.get()));
+    public static final DeferredBlock<LuxDuctBlock> LUX_DUCT = BLOCKS.register("lux_duct",
+            () -> new LuxDuctBlock(ductProps()));
 }

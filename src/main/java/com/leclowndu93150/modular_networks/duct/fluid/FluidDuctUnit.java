@@ -8,6 +8,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -128,8 +129,12 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
         return renderFluid;
     }
 
+    public int getVisualFluidLevel() {
+        return renderFluid.isEmpty() ? 0 : Mth.clamp(renderFluid.getAmount(), 1, 6);
+    }
+
     public void setRenderFluid(FluidStack fluid) {
-        renderFluid = fluid.copy();
+        renderFluid = fluid == null || fluid.isEmpty() ? FluidStack.EMPTY : fluid.copy();
     }
 
     @Override

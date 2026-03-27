@@ -51,6 +51,9 @@ import java.util.Map;
 public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEntity> {
 
     private static final Map<String, DuctTextures> DUCT_TEX = new HashMap<>();
+    private static final String REDSTONE_STILL = "fluid/redstone_still";
+    private static final String GLOWSTONE_STILL = "fluid/glowstone_still";
+    private static final String CRYOTHEUM_STILL = "fluid/cryotheum_still";
     private static final Translation HALF_TRANSLATION = new Translation(0.5, 0.5, 0.5);
     private static final float COVER_THICKNESS = 1.0F / 16.0F;
     private static final int[] COVER_AXIS_BY_SIDE = {1, 1, 2, 2, 0, 0};
@@ -63,14 +66,14 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     static {
         reg("energy_duct_basic", "lead_trans", "lead", "redstone_background", 255);
         reg("energy_duct_hardened", "invar_trans", "invar", "redstone_background", 255);
-        reg("energy_duct_reinforced", "electrum_trans", "electrum", "metal_redstone", 192);
-        reg("energy_duct_signalum", "signalum_trans", "signalum", "metal_redstone", 192);
-        reg("energy_duct_resonant", "enderium_trans", "enderium", "metal_redstone", 192);
-        reg("energy_duct_superconductor", "enderium_trans", "enderium", "metal_redstone", 255, FrameType.FRAME, "electrum_trans", "electrum_band", "flux_electrum", 96);
+        reg("energy_duct_reinforced", "electrum_trans", "electrum", REDSTONE_STILL, 192);
+        reg("energy_duct_signalum", "signalum_trans", "signalum", REDSTONE_STILL, 192);
+        reg("energy_duct_resonant", "enderium_trans", "enderium", REDSTONE_STILL, 192);
+        reg("energy_duct_superconductor", "enderium_trans", "enderium", REDSTONE_STILL, 255, FrameType.FRAME, "electrum_trans", "electrum_band", CRYOTHEUM_STILL, 96);
         reg("energy_duct_reinforced_empty", "electrum_trans", "electrum", null, 0);
         reg("energy_duct_signalum_empty", "signalum_trans", "signalum", null, 0);
         reg("energy_duct_resonant_empty", "enderium_trans", "enderium", null, 0);
-        reg("energy_duct_superconductor_empty", "enderium_trans", "enderium", "metal_redstone", 192, FrameType.FRAME, "electrum_trans", "electrum_band", null, 0);
+        reg("energy_duct_superconductor_empty", "enderium_trans", "enderium", REDSTONE_STILL, 192, FrameType.FRAME, "electrum_trans", "electrum_band", null, 0);
 
         reg("fluid_duct_basic", "copper_trans", "copper", null, 0);
         reg("fluid_duct_basic_opaque", "copper", "copper", null, 0);
@@ -83,11 +86,11 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
 
         reg("item_duct_basic", "tin_trans", "tin", null, 0);
         reg("item_duct_basic_opaque", "tin", "tin", null, 0);
-        reg("item_duct_fast", "tin_trans", "tin", "flux_electrum", 80);
+        reg("item_duct_fast", "tin_trans", "tin", GLOWSTONE_STILL, 80);
         reg("item_duct_fast_opaque", "tin_alt", "tin", null, 0);
         reg("item_duct_energy", "tin_signalum_trans", "tin", null, 0);
         reg("item_duct_energy_opaque", "tin_signalum", "tin", null, 0);
-        reg("item_duct_energy_fast", "tin_signalum_trans", "tin", "flux_electrum", 80);
+        reg("item_duct_energy_fast", "tin_signalum_trans", "tin", GLOWSTONE_STILL, 80);
         reg("item_duct_energy_fast_opaque", "tin_alt_signalum", "tin", null, 0);
 
         reg("transport_duct_basic", null, null, null, 0, FrameType.TRANSPORT, "copper_trans", "copper_band", "green_glass", 96);
@@ -161,7 +164,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
 
         if (tex.fluid != null && tex.fluidAlpha == 255) {
             renderTinted(ccrs, bufferSource, poseStack, DuctModels.modelFluidTubes[connectionMask], trans,
-                    "block/duct/base/" + tex.fluid, 255, itemRender);
+                    resolveSpritePath(tex.fluid), 255, itemRender);
         }
 
         if (itemRender && tex.base != null) {
@@ -181,7 +184,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
             ccrs.bind(getCutoutRenderType(false), bufferSource, poseStack);
 
             for (Direction dir : Direction.values()) {
-                if (isExternalConnection(be, state, dir)) {
+                if (shouldRenderConnectionDetail(be, state, dir)) {
                     DuctModels.modelConnection[1][dir.ordinal()].render(ccrs, trans, connIcon);
                 }
             }
@@ -208,7 +211,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                     if (!isConnected(be, state, dir)) {
                         continue;
                     }
-                    if (isExternalConnection(be, state, dir) && bandIcon != null) {
+                    if (shouldRenderConnectionDetail(be, state, dir) && bandIcon != null) {
                         ccrs.bind(getCutoutRenderType(itemRender), bufferSource, poseStack);
                         DuctModels.modelFrameConnection[64 + dir.ordinal()].render(ccrs, trans, bandIcon);
                         ccrs.bind(getRenderTypeForTexture(tex.frame, true, itemRender), bufferSource, poseStack);
@@ -232,7 +235,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                 IconTransformation bandIcon = bandSprite == null ? null : new IconTransformation(bandSprite);
 
                 for (Direction dir : Direction.values()) {
-                    if (isExternalConnection(be, state, dir) && bandIcon != null) {
+                    if (shouldRenderConnectionDetail(be, state, dir) && bandIcon != null) {
                         ccrs.bind(getCutoutRenderType(itemRender), bufferSource, poseStack);
                         DuctModels.modelTransportConnection[64 + dir.ordinal()].render(ccrs, trans, bandIcon);
                     }
@@ -252,7 +255,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                                           Translation trans, DuctTextures tex, int connectionMask, DuctBlockEntity be, boolean itemRender) {
         if (tex.fluid != null && tex.fluidAlpha > 0 && tex.fluidAlpha < 255) {
             renderTinted(ccrs, bufferSource, poseStack, DuctModels.modelFluidTubes[connectionMask], trans,
-                    "block/duct/base/" + tex.fluid, tex.fluidAlpha, itemRender);
+                    resolveSpritePath(tex.fluid), tex.fluidAlpha, itemRender);
         }
 
         if (tex.frameFluid == null || tex.frameFluidAlpha <= 0) {
@@ -262,13 +265,13 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         switch (tex.frameType) {
             case SIDE -> renderSideTubes(ccrs, bufferSource, poseStack, trans, connectionMask, true, "block/duct/base/" + tex.frameFluid, tex.frameFluidAlpha, itemRender);
             case FRAME -> {
-                TextureAtlasSprite frameFluidSprite = getSprite("block/duct/base/" + tex.frameFluid);
+                TextureAtlasSprite frameFluidSprite = getSprite(resolveSpritePath(tex.frameFluid));
                 IconTransformation frameFluidIcon = new IconTransformation(frameFluidSprite);
-                ccrs.bind(getRenderTypeForTexture(tex.frameFluid, true, itemRender), bufferSource, poseStack);
+                ccrs.bind(getRenderTypeForTexture(resolveSpritePath(tex.frameFluid), true, itemRender), bufferSource, poseStack);
                 ccrs.baseColour = rgba(255, 255, 255, tex.frameFluidAlpha);
 
                 for (Direction dir : Direction.values()) {
-                    if (isConnected(be, be.getBlockState(), dir) && isExternalConnection(be, be.getBlockState(), dir)) {
+                    if (isConnected(be, be.getBlockState(), dir) && shouldRenderConnectionDetail(be, be.getBlockState(), dir)) {
                         DuctModels.modelFrame[70 + dir.ordinal()].render(ccrs, trans, frameFluidIcon);
                     }
                 }
@@ -279,9 +282,9 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                 ccrs.baseColour = 0xFFFFFFFF;
             }
             case TRANSPORT -> {
-                TextureAtlasSprite frameFluidSprite = getSprite("block/duct/base/" + tex.frameFluid);
+                TextureAtlasSprite frameFluidSprite = getSprite(resolveSpritePath(tex.frameFluid));
                 IconTransformation frameFluidIcon = new IconTransformation(frameFluidSprite);
-                ccrs.bind(getRenderTypeForTexture(tex.frameFluid, true, itemRender), bufferSource, poseStack);
+                ccrs.bind(getRenderTypeForTexture(resolveSpritePath(tex.frameFluid), true, itemRender), bufferSource, poseStack);
                 ccrs.baseColour = rgba(255, 255, 255, tex.frameFluidAlpha);
                 if (DuctModels.modelTransport[connectionMask].verts.length != 0) {
                     DuctModels.modelTransport[connectionMask].render(ccrs, trans, frameFluidIcon);
@@ -304,7 +307,8 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         var fluidUnit = be.getDuctUnit(DuctToken.FLUID);
         if (fluidUnit instanceof FluidDuctUnit fdu && fdu.isTransparent()) {
             FluidStack fluid = fdu.getVisualFluid();
-            if (!fluid.isEmpty()) {
+            int level = fdu.getVisualFluidLevel();
+            if (!fluid.isEmpty() && level > 0) {
                 IClientFluidTypeExtensions fluidExt = IClientFluidTypeExtensions.of(fluid.getFluid());
                 ResourceLocation stillTex = fluidExt.getStillTexture(fluid);
                 if (stillTex != null) {
@@ -314,7 +318,17 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
 
                     ccrs.bind(getTranslucentRenderType(itemRender), bufferSource, poseStack);
                     ccrs.baseColour = color;
-                    DuctModels.modelFluidTubes[connectionMask].render(ccrs, trans, icon);
+                    if (level < 6) {
+                        CCModel[] models = DuctModels.modelFluid[level - 1];
+                        for (Direction dir : Direction.values()) {
+                            if ((connectionMask & (1 << dir.ordinal())) != 0) {
+                                models[dir.ordinal()].render(ccrs, trans, icon);
+                            }
+                        }
+                        models[6].render(ccrs, trans, icon);
+                    } else {
+                        DuctModels.modelFluidTubes[connectionMask].render(ccrs, trans, icon);
+                    }
                     ccrs.baseColour = 0xFFFFFFFF;
                 }
             }
@@ -583,10 +597,31 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         return !(be.getLevel().getBlockState(be.getBlockPos().relative(dir)).getBlock() instanceof DuctBlock);
     }
 
+    private boolean shouldRenderConnectionDetail(DuctBlockEntity be, BlockState state, Direction dir) {
+        if (!isConnected(be, state, dir)) {
+            return false;
+        }
+        if (be.getLevel() == null) {
+            return true;
+        }
+
+        BlockState neighborState = be.getLevel().getBlockState(be.getBlockPos().relative(dir));
+        if (!(neighborState.getBlock() instanceof DuctBlock)) {
+            return true;
+        }
+
+        // 1.12 renders connection hands/bands when the join is not a plain same-duct seam.
+        return neighborState.getBlock() != state.getBlock();
+    }
+
     private TextureAtlasSprite getSprite(String path) {
         return spriteCache.computeIfAbsent(path, p ->
                 Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
                         .apply(ResourceLocation.fromNamespaceAndPath(ModularNetworks.MODID, p)));
+    }
+
+    private static String resolveSpritePath(String path) {
+        return path.startsWith("fluid/") ? "block/" + path : "block/duct/base/" + path;
     }
 
     private static boolean isItemRender(DuctBlockEntity be) {
@@ -598,7 +633,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     }
 
     private static RenderType getRenderTypeForTexture(String texture, boolean translucent, boolean itemRender) {
-        if (translucent || texture.contains("trans") || texture.contains("glass") || texture.contains("flux")) {
+        if (translucent || texture.contains("trans") || texture.contains("glass") || texture.contains("flux") || texture.contains("/fluid/")) {
             return getTranslucentRenderType(itemRender);
         }
         return getCutoutRenderType(itemRender);

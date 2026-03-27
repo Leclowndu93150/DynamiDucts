@@ -118,6 +118,27 @@ public abstract class DuctBlock extends Block implements EntityBlock {
         return getMultipartShape(state, level, pos);
     }
 
+    @Override
+    protected boolean isSignalSource(BlockState state) {
+        return true;
+    }
+
+    @Override
+    protected int getSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
+            Attachment att = ductBE.getAttachment(direction.getOpposite());
+            if (att instanceof Relay relay && relay.getType() == Relay.TYPE_REDSTONE_OUTPUT) {
+                return relay.getOutputStrength();
+            }
+        }
+        return 0;
+    }
+
+    @Override
+    protected int getDirectSignal(BlockState state, BlockGetter level, BlockPos pos, Direction direction) {
+        return getSignal(state, level, pos, direction);
+    }
+
     private int getShapeIndex(BlockState state) {
         int index = 0;
         for (Direction dir : Direction.values()) {

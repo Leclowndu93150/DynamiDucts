@@ -91,7 +91,14 @@ public class Relay extends Attachment {
     }
 
     public void outputSignal(int strength) {
-        this.outputStrength = applyInversion(strength);
+        int newStrength = applyInversion(strength);
+        if (newStrength != outputStrength) {
+            outputStrength = newStrength;
+            Level level = parent.getLevel();
+            if (level != null && !level.isClientSide) {
+                level.updateNeighborsAt(parent.getBlockPos(), parent.getBlockState().getBlock());
+            }
+        }
     }
 
     public int getOutputStrength() {

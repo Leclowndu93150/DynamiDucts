@@ -26,6 +26,8 @@ public class TransportEntity extends Entity {
             SynchedEntityData.defineId(TransportEntity.class, EntityDataSerializers.INT);
     private static final EntityDataAccessor<Byte> DATA_DIRECTION =
             SynchedEntityData.defineId(TransportEntity.class, EntityDataSerializers.BYTE);
+    private static final EntityDataAccessor<Byte> DATA_OLD_DIRECTION =
+            SynchedEntityData.defineId(TransportEntity.class, EntityDataSerializers.BYTE);
     private static final EntityDataAccessor<BlockPos> DATA_DUCT_POS =
             SynchedEntityData.defineId(TransportEntity.class, EntityDataSerializers.BLOCK_POS);
 
@@ -81,6 +83,14 @@ public class TransportEntity extends Entity {
         if (finished || route == null || getPassengers().isEmpty()) {
             ejectAndRemove();
             return;
+        }
+
+        for (Entity passenger : getPassengers()) {
+            if (passenger instanceof Player player) {
+                player.setSwimming(true);
+                player.setPose(net.minecraft.world.entity.Pose.SWIMMING);
+                player.fallDistance = 0;
+            }
         }
 
         progress += getSpeed();
@@ -177,6 +187,7 @@ public class TransportEntity extends Entity {
     private void updateClientPosition() {
         progress = entityData.get(DATA_PROGRESS);
         direction = Direction.from3DDataValue(entityData.get(DATA_DIRECTION));
+        oldDirection = Direction.from3DDataValue(entityData.get(DATA_OLD_DIRECTION));
         currentDuctPos = entityData.get(DATA_DUCT_POS);
         updatePosition();
     }
@@ -184,6 +195,7 @@ public class TransportEntity extends Entity {
     private void syncData() {
         entityData.set(DATA_PROGRESS, progress);
         entityData.set(DATA_DIRECTION, (byte) direction.get3DDataValue());
+        entityData.set(DATA_OLD_DIRECTION, (byte) oldDirection.get3DDataValue());
         entityData.set(DATA_DUCT_POS, currentDuctPos);
     }
 
@@ -191,6 +203,7 @@ public class TransportEntity extends Entity {
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_PROGRESS, 0);
         builder.define(DATA_DIRECTION, (byte) 0);
+        builder.define(DATA_OLD_DIRECTION, (byte) 0);
         builder.define(DATA_DUCT_POS, BlockPos.ZERO);
     }
 
