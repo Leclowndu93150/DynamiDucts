@@ -38,6 +38,7 @@ public class ItemDuctRenderer extends DuctBlockEntityRenderer {
         var unit = be.getDuctUnit(DuctToken.ITEM);
         if (!(unit instanceof ItemDuctUnit itemUnit)) return;
         if (be.getLevel() == null) return;
+        if (!itemUnit.isTransparent()) return;
         float gameTime = (be.getLevel().getGameTime() + partialTick) * SPIN_SPEED;
         float spinAngle = gameTime % 360;
 

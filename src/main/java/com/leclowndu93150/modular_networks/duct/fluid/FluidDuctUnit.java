@@ -17,7 +17,8 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
     private final int capacityPerDuct;
     private final int throughputPerDuct;
     private final boolean transparent;
-    private FluidStack visualFluid = FluidStack.EMPTY;
+    private FluidStack fluidForGrid = FluidStack.EMPTY;
+    private FluidStack renderFluid = FluidStack.EMPTY;
 
     public FluidDuctUnit(DuctBlockEntity parent, int capacityPerDuct, int throughputPerDuct, boolean transparent) {
         super(parent);
@@ -101,28 +102,59 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
         };
     }
 
+    private boolean beingDestroyed;
+
     public boolean isTransparent() {
         return transparent;
     }
 
-    public FluidStack getVisualFluid() {
-        return grid != null ? grid.getTank().getFluid() : visualFluid;
+    public void markBeingDestroyed() {
+        beingDestroyed = true;
     }
 
-    public void setVisualFluid(FluidStack fluid) {
-        visualFluid = fluid.copy();
+    public boolean isBeingDestroyed() {
+        return beingDestroyed;
+    }
+
+    public FluidStack getFluidForGrid() {
+        return fluidForGrid;
+    }
+
+    public void setFluidForGrid(FluidStack fluid) {
+        this.fluidForGrid = fluid != null ? fluid : FluidStack.EMPTY;
+    }
+
+    public FluidStack getVisualFluid() {
+        return renderFluid;
+    }
+
+    public void setRenderFluid(FluidStack fluid) {
+        renderFluid = fluid.copy();
     }
 
     @Override
     public void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        FluidStack fluid = grid != null ? grid.getTank().getFluid() : visualFluid;
-        if (!fluid.isEmpty()) {
-            tag.put("VisualFluid", fluid.saveOptional(provider));
+        FluidStack toSave = FluidStack.EMPTY;
+        if (grid != null && !grid.getTank().isEmpty()) {
+            toSave = grid.getNodeShare(this);
+        } else if (!fluidForGrid.isEmpty()) {
+            toSave = fluidForGrid;
+        }
+        if (!toSave.isEmpty()) {
+            tag.put("Fluid", toSave.saveOptional(provider));
+        }
+        if (!renderFluid.isEmpty()) {
+            tag.put("RenderFluid", renderFluid.saveOptional(provider));
         }
     }
 
     @Override
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider provider) {
-        visualFluid = tag.contains("VisualFluid") ? FluidStack.parseOptional(provider, tag.getCompound("VisualFluid")) : FluidStack.EMPTY;
+        fluidForGrid = tag.contains("Fluid")
+                ? FluidStack.parseOptional(provider, tag.getCompound("Fluid"))
+                : FluidStack.EMPTY;
+        renderFluid = tag.contains("RenderFluid")
+                ? FluidStack.parseOptional(provider, tag.getCompound("RenderFluid"))
+                : FluidStack.EMPTY;
     }
 }

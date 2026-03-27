@@ -8,6 +8,7 @@ import com.leclowndu93150.modular_networks.core.duct.DuctToken;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import com.leclowndu93150.modular_networks.core.network.ConnectionType;
 import com.leclowndu93150.modular_networks.core.network.NetworkManager;
+import com.leclowndu93150.modular_networks.duct.fluid.FluidDuctUnit;
 import com.leclowndu93150.modular_networks.duct.item.ItemDuctUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -117,9 +118,11 @@ public abstract class DuctBlockEntity extends BlockEntity {
     @Override
     public void onLoad() {
         super.onLoad();
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.updateCaches();
+        }
         if (level instanceof ServerLevel serverLevel) {
             for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
-                unit.updateCaches();
                 NetworkManager.get(serverLevel).scheduleFormation(unit);
             }
         }
@@ -138,6 +141,9 @@ public abstract class DuctBlockEntity extends BlockEntity {
         for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
             if (unit instanceof ItemDuctUnit itemUnit) {
                 itemUnit.dropAllItems();
+            }
+            if (unit instanceof FluidDuctUnit fluidUnit) {
+                fluidUnit.markBeingDestroyed();
             }
             unit.invalidate();
         }
@@ -280,6 +286,16 @@ public abstract class DuctBlockEntity extends BlockEntity {
                         attachments[i].load(attTag, registries);
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag, HolderLookup.Provider registries) {
+        super.handleUpdateTag(tag, registries);
+        if (level != null && level.isClientSide) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
             }
         }
     }

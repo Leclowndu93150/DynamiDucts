@@ -104,6 +104,8 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     //implementation "codechicken:CodeChickenLib:1.21.1-4.6.1.526:universal"
     implementation "curse.maven:codechicken-lib-1-8-242818:7281427"
+    implementation "curse.maven:mekanism-268560:7621971"
+    implementation "curse.maven:jade-324717:7545219"
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html

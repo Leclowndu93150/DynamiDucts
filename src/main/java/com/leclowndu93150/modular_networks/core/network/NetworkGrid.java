@@ -73,6 +73,9 @@ public abstract class NetworkGrid<T extends DuctUnit<T, ?, ?>> {
     public void onMinorGridChange() {
     }
 
+    public void onMergeFrom(NetworkGrid<?> source) {
+    }
+
     public boolean isFirstBlock(T block) {
         var iterator = nodeSet.iterator();
         return iterator.hasNext() && iterator.next() == block;

@@ -1,6 +1,5 @@
 package com.leclowndu93150.modular_networks.core.network;
 
-import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.duct.DuctUnit;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -41,7 +40,7 @@ public class NetworkFormer {
                     toCheck.add(neighbor);
                 } else if (neighborGrid != grid && neighborGrid.isValid()) {
                     if (grid.canGridsMerge(neighborGrid)) {
-                        mergeGrids(grid, neighborGrid);
+                        grid = mergeGrids(grid, neighborGrid);
                     }
                 }
             }
@@ -51,13 +50,14 @@ public class NetworkFormer {
         NetworkManager.get(level).addGrid(grid);
     }
 
-    private static <T extends DuctUnit<T, G, ?>, G extends NetworkGrid<T>> void mergeGrids(G target, G source) {
+    private static <T extends DuctUnit<T, G, ?>, G extends NetworkGrid<T>> G mergeGrids(G target, G source) {
         if (source.size() > target.size()) {
-            mergeGrids(source, target);
-            return;
+            return mergeGrids(source, target);
         }
 
         NetworkManager.get(target.getLevel()).removeGrid(source);
+
+        target.onMergeFrom(source);
 
         for (T unit : source.getNodeSet()) {
             unit.setGrid(target);
@@ -71,5 +71,7 @@ public class NetworkFormer {
 
         source.getNodeSet().clear();
         source.getIdleSet().clear();
+
+        return target;
     }
 }

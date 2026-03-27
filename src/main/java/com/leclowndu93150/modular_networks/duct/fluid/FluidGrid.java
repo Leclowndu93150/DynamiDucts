@@ -1,24 +1,58 @@
 package com.leclowndu93150.modular_networks.duct.fluid;
 
+import com.leclowndu93150.modular_networks.core.attachment.Attachment;
+import com.leclowndu93150.modular_networks.core.attachment.ConnectionBase;
 import com.leclowndu93150.modular_networks.core.network.NetworkGrid;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-
 public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
     protected final FluidGridTank tank;
     protected final int capacityPerDuct;
     protected final int throughputPerDuct;
-    private FluidStack syncedVisualFluid = FluidStack.EMPTY;
+    private FluidStack lastSyncedFluid = FluidStack.EMPTY;
 
     public FluidGrid(ServerLevel level, int capacityPerDuct, int throughputPerDuct) {
         super(level);
         this.capacityPerDuct = capacityPerDuct;
         this.throughputPerDuct = throughputPerDuct;
         this.tank = new FluidGridTank(capacityPerDuct, throughputPerDuct);
+    }
+
+    @Override
+    public void addBlock(FluidDuctUnit unit) {
+        super.addBlock(unit);
+        collectFluidFrom(unit);
+    }
+
+    private void collectFluidFrom(FluidDuctUnit unit) {
+        FluidStack fluid = unit.getFluidForGrid();
+        if (!fluid.isEmpty()) {
+            tank.fill(fluid, IFluidHandler.FluidAction.EXECUTE);
+            unit.setFluidForGrid(FluidStack.EMPTY);
+        }
+    }
+
+    @Override
+    public void removeBlock(FluidDuctUnit unit) {
+        if (!tank.isEmpty() && !unit.isBeingDestroyed()) {
+            FluidStack share = getNodeShare(unit);
+            if (!share.isEmpty()) {
+                unit.setFluidForGrid(share);
+                tank.drain(share.getAmount(), IFluidHandler.FluidAction.EXECUTE);
+            }
+        }
+        super.removeBlock(unit);
+    }
+
+    @Override
+    public void onMergeFrom(NetworkGrid<?> source) {
+        if (source instanceof FluidGrid fluidSource && !fluidSource.tank.isEmpty()) {
+            tank.fill(fluidSource.tank.getFluid().copy(), IFluidHandler.FluidAction.EXECUTE);
+        }
     }
 
     @Override
@@ -29,16 +63,22 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     }
 
     @Override
+    public void onMajorGridChange() {
+        super.onMajorGridChange();
+        lastSyncedFluid = FluidStack.EMPTY;
+    }
+
+    @Override
     public void tickGrid() {
         super.tickGrid();
         if (nodeSet.isEmpty() || tank.isEmpty()) {
-            syncVisualFluidIfNeeded();
+            syncVisualIfChanged();
             return;
         }
 
         int available = getEffectiveThroughput();
         if (available <= 0) {
-            syncVisualFluidIfNeeded();
+            syncVisualIfChanged();
             return;
         }
 
@@ -46,6 +86,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
             for (Direction dir : Direction.values()) {
                 IFluidHandler target = node.getTileCache(dir);
                 if (target == null) continue;
+                if (hasServoOnSide(node, dir)) continue;
 
                 FluidStack toSend = tank.drain(available, IFluidHandler.FluidAction.SIMULATE);
                 if (toSend.isEmpty()) break;
@@ -55,13 +96,13 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
                     tank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
                     available -= filled;
                     if (available <= 0) {
-                        syncVisualFluidIfNeeded();
+                        syncVisualIfChanged();
                         return;
                     }
                 }
             }
         }
-        syncVisualFluidIfNeeded();
+        syncVisualIfChanged();
     }
 
     private int getEffectiveThroughput() {
@@ -82,36 +123,42 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     public int fill(FluidStack resource, IFluidHandler.FluidAction action) {
         int filled = tank.fill(resource, action);
         if (filled > 0 && action.execute()) {
-            syncVisualFluidIfNeeded();
+            syncVisualIfChanged();
         }
         return filled;
     }
 
-    private void syncVisualFluidIfNeeded() {
+    public FluidStack getNodeShare(FluidDuctUnit unit) {
+        if (tank.isEmpty()) return FluidStack.EMPTY;
+        int totalDucts = nodeSet.size() + idleSet.size();
+        if (totalDucts <= 0) return FluidStack.EMPTY;
+        int share = tank.getFluid().getAmount() / totalDucts;
+        if (share <= 0) return FluidStack.EMPTY;
+        return tank.getFluid().copyWithAmount(share);
+    }
+
+    private void syncVisualIfChanged() {
         FluidStack current = tank.getFluid();
-        if (sameVisualFluid(syncedVisualFluid, current)) {
-            return;
-        }
+        if (isSameVisual(lastSyncedFluid, current)) return;
 
-        syncedVisualFluid = current.copy();
-        for (FluidDuctUnit node : nodeSet) {
-            syncVisualFluid(node, current);
-        }
-        for (FluidDuctUnit node : idleSet) {
-            syncVisualFluid(node, current);
-        }
+        lastSyncedFluid = current.copy();
+        for (FluidDuctUnit unit : nodeSet) syncVisualToClient(unit, current);
+        for (FluidDuctUnit unit : idleSet) syncVisualToClient(unit, current);
     }
 
-    private void syncVisualFluid(FluidDuctUnit node, FluidStack fluid) {
-        node.setVisualFluid(fluid);
-        node.getParent().setChanged();
-        level.sendBlockUpdated(node.getPos(), node.getParent().getBlockState(), node.getParent().getBlockState(), Block.UPDATE_CLIENTS);
+    private void syncVisualToClient(FluidDuctUnit unit, FluidStack fluid) {
+        unit.setRenderFluid(fluid);
+        unit.getParent().setChanged();
+        level.sendBlockUpdated(unit.getPos(), unit.getParent().getBlockState(), unit.getParent().getBlockState(), Block.UPDATE_CLIENTS);
     }
 
-    private static boolean sameVisualFluid(FluidStack first, FluidStack second) {
-        if (first.isEmpty() || second.isEmpty()) {
-            return first.isEmpty() == second.isEmpty();
-        }
-        return FluidStack.isSameFluidSameComponents(first, second);
+    private static boolean hasServoOnSide(FluidDuctUnit unit, Direction side) {
+        Attachment att = unit.getParent().getAttachment(side);
+        return att instanceof ConnectionBase conn && conn.isServo();
+    }
+
+    private static boolean isSameVisual(FluidStack a, FluidStack b) {
+        if (a.isEmpty() || b.isEmpty()) return a.isEmpty() == b.isEmpty();
+        return FluidStack.isSameFluidSameComponents(a, b);
     }
 }

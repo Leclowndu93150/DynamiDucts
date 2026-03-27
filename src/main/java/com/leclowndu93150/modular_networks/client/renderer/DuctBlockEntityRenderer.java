@@ -38,6 +38,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.RenderTypeHelper;
@@ -50,11 +51,14 @@ import java.util.Map;
 public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEntity> {
 
     private static final Map<String, DuctTextures> DUCT_TEX = new HashMap<>();
+    private static final Translation HALF_TRANSLATION = new Translation(0.5, 0.5, 0.5);
     private static final float COVER_THICKNESS = 1.0F / 16.0F;
     private static final int[] COVER_AXIS_BY_SIDE = {1, 1, 2, 2, 0, 0};
     private static final float[] COVER_SOFT_BOUNDS = {0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 1.0F};
     private static final float COVER_EDGE_CLAMP = 1.0F / 512.0F;
     private final BlockRenderDispatcher blockRenderer;
+    private final Map<String, TextureAtlasSprite> spriteCache = new HashMap<>();
+    private final Map<Block, String> ductNameCache = new HashMap<>();
 
     static {
         reg("energy_duct_basic", "lead_trans", "lead", "redstone_background", 255);
@@ -114,17 +118,17 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     public void render(DuctBlockEntity be, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource,
                        int packedLight, int packedOverlay) {
         BlockState state = be.getBlockState();
-        String ductName = state.getBlock().builtInRegistryHolder().key().location().getPath();
+        String ductName = ductNameCache.computeIfAbsent(state.getBlock(),
+                b -> b.builtInRegistryHolder().key().location().getPath());
         DuctTextures tex = DUCT_TEX.getOrDefault(ductName, DUCT_TEX.get("structural_duct"));
         boolean itemRender = isItemRender(be);
 
         if (tex == null) {
-            ModularNetworks.LOG.warn("[DuctBESR] No textures found for duct: {}", ductName);
             return;
         }
 
         int connectionMask = getConnectionMask(be, state);
-        Translation trans = new Translation(0.5, 0.5, 0.5);
+        Translation trans = HALF_TRANSLATION;
 
         CCRenderState ccrs = CCRenderState.instance();
         ccrs.reset();
@@ -134,8 +138,10 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
 
         try {
             renderBase(ccrs, bufferSource, poseStack, trans, tex, connectionMask, state, be, itemRender);
-            renderDecorativeOverlays(ccrs, bufferSource, poseStack, trans, tex, connectionMask, be, itemRender);
-            renderFluidContents(be, ccrs, bufferSource, poseStack, trans, connectionMask, itemRender);
+            if (!tex.opaque) {
+                renderDecorativeOverlays(ccrs, bufferSource, poseStack, trans, tex, connectionMask, be, itemRender);
+                renderFluidContents(be, ccrs, bufferSource, poseStack, trans, connectionMask, itemRender);
+            }
             renderAttachments(be, ccrs, bufferSource, poseStack, trans);
         } catch (Exception e) {
             ModularNetworks.LOG.error("[DuctBESR] Exception during render at {}", be.getBlockPos(), e);
@@ -573,13 +579,14 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         if (!isConnected(be, state, dir)) {
             return false;
         }
-        BlockPos neighborPos = be.getBlockPos().relative(dir);
-        return be.getLevel() == null || !(be.getLevel().getBlockState(neighborPos).getBlock() instanceof DuctBlock);
+        if (be.getLevel() == null) return true;
+        return !(be.getLevel().getBlockState(be.getBlockPos().relative(dir)).getBlock() instanceof DuctBlock);
     }
 
     private TextureAtlasSprite getSprite(String path) {
-        return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(ResourceLocation.fromNamespaceAndPath(ModularNetworks.MODID, path));
+        return spriteCache.computeIfAbsent(path, p ->
+                Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                        .apply(ResourceLocation.fromNamespaceAndPath(ModularNetworks.MODID, p)));
     }
 
     private static boolean isItemRender(DuctBlockEntity be) {
