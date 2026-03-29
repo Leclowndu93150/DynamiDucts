@@ -16,6 +16,10 @@ public class TransportDuctBlockEntity extends DuctBlockEntity {
         initDuctUnits();
     }
 
+    public Tier getTier() {
+        return tier;
+    }
+
     @Override
     protected void initDuctUnits() {
         if (tier == Tier.FRAME) return;

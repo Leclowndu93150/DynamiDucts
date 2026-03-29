@@ -13,6 +13,7 @@ import com.leclowndu93150.modular_networks.init.MNCreativeTab;
 import com.leclowndu93150.modular_networks.init.MNDataComponents;
 import com.leclowndu93150.modular_networks.init.MNAttachments;
 import com.leclowndu93150.modular_networks.init.MNItems;
+import com.leclowndu93150.modular_networks.init.MNDataAttachments;
 import com.leclowndu93150.modular_networks.init.MNEntityTypes;
 import com.leclowndu93150.modular_networks.init.MNMenuTypes;
 import com.leclowndu93150.modular_networks.init.MNRecipeSerializers;
@@ -66,6 +67,7 @@ public class ModularNetworks {
         MNBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         MNMenuTypes.MENU_TYPES.register(modEventBus);
         MNEntityTypes.ENTITY_TYPES.register(modEventBus);
+        MNDataAttachments.ATTACHMENT_TYPES.register(modEventBus);
         MNCreativeTab.CREATIVE_TABS.register(modEventBus);
         MNRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
 
@@ -123,6 +125,7 @@ public class ModularNetworks {
             ductRenderer(event, MNBlockEntities.ITEM_DUCT_ENERGY_OPAQUE, true);
             ductRenderer(event, MNBlockEntities.ITEM_DUCT_ENERGY_FAST, true);
             ductRenderer(event, MNBlockEntities.ITEM_DUCT_ENERGY_FAST_OPAQUE, true);
+
 
             ductRenderer(event, MNBlockEntities.TRANSPORT_DUCT_BASIC, false);
             ductRenderer(event, MNBlockEntities.TRANSPORT_DUCT_LONG_RANGE, false);

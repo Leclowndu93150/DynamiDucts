@@ -1,7 +1,9 @@
 package com.leclowndu93150.modular_networks.duct.transport;
 
+import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.blockentity.DuctBlockEntity;
 import com.leclowndu93150.modular_networks.core.duct.DuctToken;
+import com.leclowndu93150.modular_networks.init.MNDataAttachments;
 import com.leclowndu93150.modular_networks.init.MNEntityTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -38,6 +40,7 @@ public class TransportEntity extends Entity {
     private Direction oldDirection;
     private BlockPos currentDuctPos;
     private boolean finished;
+    private boolean allowDismount;
 
     public TransportEntity(EntityType<?> type, Level level) {
         super(type, level);
@@ -133,10 +136,22 @@ public class TransportEntity extends Entity {
 
     private void dropAtDestination() {
         finished = true;
+        allowDismount = true;
+        for (Entity passenger : getPassengers()) {
+            if (passenger instanceof Player player) {
+                player.setData(MNDataAttachments.TRANSPORT_TARGET.get(), java.util.Optional.empty());
+            }
+        }
         Direction exitDir = Direction.values()[route.exitSide];
-        double x = route.destination.getX() + 0.5 + exitDir.getStepX() * 1.0;
-        double y = route.destination.getY() + 0.5 + exitDir.getStepY() * 1.0;
-        double z = route.destination.getZ() + 0.5 + exitDir.getStepZ() * 1.0;
+        double x = route.destination.getX() + 0.5 + exitDir.getStepX() * 1.5;
+        double y = route.destination.getY() + exitDir.getStepY() * 1.0;
+        double z = route.destination.getZ() + 0.5 + exitDir.getStepZ() * 1.5;
+
+        if (exitDir == Direction.DOWN) {
+            y = route.destination.getY() - 1.0;
+        } else if (exitDir == Direction.UP) {
+            y = route.destination.getY() + 1.0;
+        }
 
         for (Entity passenger : getPassengers()) {
             passenger.stopRiding();
@@ -157,13 +172,16 @@ public class TransportEntity extends Entity {
     }
 
     private void ejectAndRemove() {
+        allowDismount = true;
         for (Entity passenger : getPassengers()) {
             passenger.stopRiding();
-            passenger.teleportTo(
-                    currentDuctPos.getX() + 0.5,
-                    currentDuctPos.getY() + 1.0,
-                    currentDuctPos.getZ() + 0.5
-            );
+            if (currentDuctPos != null) {
+                passenger.teleportTo(
+                        currentDuctPos.getX() + 0.5,
+                        currentDuctPos.getY() + 1.0,
+                        currentDuctPos.getZ() + 0.5
+                );
+            }
         }
         discard();
     }
@@ -212,6 +230,7 @@ public class TransportEntity extends Entity {
         return false;
     }
 
+
     @Override
     protected void readAdditionalSaveData(CompoundTag tag) {
     }
@@ -226,6 +245,11 @@ public class TransportEntity extends Entity {
     }
 
     @Override
+    public boolean canRiderInteract() {
+        return false;
+    }
+
+    @Override
     public boolean isPickable() {
         return false;
     }
@@ -233,6 +257,15 @@ public class TransportEntity extends Entity {
     @Override
     public boolean isPushable() {
         return false;
+    }
+
+    @Override
+    protected boolean canAddPassenger(Entity passenger) {
+        return getPassengers().isEmpty();
+    }
+
+    public boolean isFinishedOrRemoving() {
+        return allowDismount || finished || isRemoved();
     }
 
     public Direction getDirection() {
@@ -249,5 +282,9 @@ public class TransportEntity extends Entity {
 
     public BlockPos getCurrentDuctPos() {
         return currentDuctPos;
+    }
+
+    public TransportRoute getRoute() {
+        return route;
     }
 }

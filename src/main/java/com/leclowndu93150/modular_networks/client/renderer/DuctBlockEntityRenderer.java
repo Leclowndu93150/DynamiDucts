@@ -45,7 +45,9 @@ import net.neoforged.neoforge.client.RenderTypeHelper;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEntity> {
@@ -299,10 +301,6 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     private void renderFluidContents(DuctBlockEntity be, CCRenderState ccrs, MultiBufferSource bufferSource,
                                      PoseStack poseStack, Translation trans, int connectionMask, boolean itemRender) {
         var energyUnit = be.getDuctUnit(DuctToken.ENERGY);
-        if (energyUnit instanceof EnergyDuctUnit edu && edu.getGrid() != null && edu.getGrid().isPowered()) {
-            // Powered energy/item ducts can have separate decorative overlays above the shell;
-            // the actual current visual is handled by the static duct texture passes above.
-        }
 
         var fluidUnit = be.getDuctUnit(DuctToken.FLUID);
         if (fluidUnit instanceof FluidDuctUnit fdu && fdu.isTransparent()) {
@@ -453,9 +451,9 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         poseStack.popPose();
     }
 
-    private static java.util.List<BakedQuad> sliceCoverQuads(BlockState state, BlockPos pos, BakedModel model,
+    public static List<BakedQuad> sliceCoverQuads(BlockState state, BlockPos pos, BakedModel model,
                                                              Direction side, AABB bounds, TextureAtlasSprite sideSprite) {
-        java.util.List<BakedQuad> sourceQuads = new java.util.ArrayList<>();
+        List<BakedQuad> sourceQuads = new ArrayList<>();
         long seed = state.getSeed(pos);
 
         sourceQuads.addAll(model.getQuads(state, null, RandomSource.create(seed)));
@@ -463,7 +461,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
             sourceQuads.addAll(model.getQuads(state, face, RandomSource.create(seed)));
         }
 
-        java.util.List<BakedQuad> result = new java.util.ArrayList<>(sourceQuads.size());
+        List<BakedQuad> result = new ArrayList<>(sourceQuads.size());
         for (BakedQuad bakedQuad : sourceQuads) {
             Quad quad = new Quad(CachedFormat.BLOCK);
             quad.reset(CachedFormat.BLOCK);

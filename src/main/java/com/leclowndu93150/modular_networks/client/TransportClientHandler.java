@@ -2,6 +2,7 @@ package com.leclowndu93150.modular_networks.client;
 
 import com.leclowndu93150.modular_networks.ModularNetworks;
 import com.leclowndu93150.modular_networks.duct.transport.TransportEntity;
+import com.mojang.math.Axis;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -58,9 +59,32 @@ public class TransportClientHandler {
     @SubscribeEvent
     public static void onRenderPlayer(RenderPlayerEvent.Pre event) {
         Entity vehicle = event.getEntity().getVehicle();
-        if (vehicle instanceof TransportEntity) {
+        if (vehicle instanceof TransportEntity transport) {
             event.getEntity().setSwimming(true);
             event.getEntity().setPose(Pose.SWIMMING);
+
+            float t = transport.getProgress() / 100F;
+            Direction dir = t < 0.5F ? transport.getOldDirection() : transport.getDirection();
+
+            if (dir == Direction.UP || dir == Direction.DOWN) {
+                float pitch = dir == Direction.UP ? -90F : 90F;
+                event.getPoseStack().pushPose();
+                event.getPoseStack().translate(0, 0.4, 0);
+                event.getPoseStack().mulPose(Axis.XP.rotationDegrees(pitch));
+                event.getPoseStack().translate(0, -0.4, 0);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderPlayerPost(RenderPlayerEvent.Post event) {
+        Entity vehicle = event.getEntity().getVehicle();
+        if (vehicle instanceof TransportEntity transport) {
+            float t = transport.getProgress() / 100F;
+            Direction dir = t < 0.5F ? transport.getOldDirection() : transport.getDirection();
+            if (dir == Direction.UP || dir == Direction.DOWN) {
+                event.getPoseStack().popPose();
+            }
         }
     }
 

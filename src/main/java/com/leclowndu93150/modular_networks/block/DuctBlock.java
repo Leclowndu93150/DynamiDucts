@@ -56,19 +56,22 @@ public abstract class DuctBlock extends Block implements EntityBlock {
             Direction.DOWN, DOWN
     );
 
-    protected static final VoxelShape[] SHAPE_SMALL = buildShapeCache(5, 11);
-    protected static final VoxelShape[] SHAPE_LARGE = buildShapeCache(4, 12);
-    protected static final VoxelShape[] SHAPE_TRANSPORT = buildShapeCache(3, 13);
+    // Normal ducts: W=3/16, center 5-11px, arms 5-11px
+    protected static final VoxelShape[] SHAPE_SMALL = buildShapeCache(5, 11, 5, 11);
+    // Bronze frame ducts (cryo, superconductor): frame radius 0.375 = 6/16, center 5-11px, arms 2-14px
+    protected static final VoxelShape[] SHAPE_LARGE = buildShapeCache(2, 14, 5, 11);
+    // Transport ducts (viaducts): radius ~0.5, center 1-15px, arms 1-15px
+    protected static final VoxelShape[] SHAPE_TRANSPORT = buildShapeCache(1, 15, 1, 15);
 
-    private static VoxelShape[] buildShapeCache(double min, double max) {
-        VoxelShape center = Block.box(min, min, min, max, max, max);
+    private static VoxelShape[] buildShapeCache(double armMin, double armMax, double centerMin, double centerMax) {
+        VoxelShape center = Block.box(centerMin, centerMin, centerMin, centerMax, centerMax, centerMax);
         VoxelShape[] arms = new VoxelShape[6];
-        arms[Direction.DOWN.ordinal()] = Block.box(min, 0, min, max, min, max);
-        arms[Direction.UP.ordinal()] = Block.box(min, max, min, max, 16, max);
-        arms[Direction.NORTH.ordinal()] = Block.box(min, min, 0, max, max, min);
-        arms[Direction.SOUTH.ordinal()] = Block.box(min, min, max, max, max, 16);
-        arms[Direction.WEST.ordinal()] = Block.box(0, min, min, min, max, max);
-        arms[Direction.EAST.ordinal()] = Block.box(max, min, min, 16, max, max);
+        arms[Direction.DOWN.ordinal()] = Block.box(armMin, 0, armMin, armMax, centerMin, armMax);
+        arms[Direction.UP.ordinal()] = Block.box(armMin, centerMax, armMin, armMax, 16, armMax);
+        arms[Direction.NORTH.ordinal()] = Block.box(armMin, armMin, 0, armMax, armMax, centerMin);
+        arms[Direction.SOUTH.ordinal()] = Block.box(armMin, armMin, centerMax, armMax, armMax, 16);
+        arms[Direction.WEST.ordinal()] = Block.box(0, armMin, armMin, centerMin, armMax, armMax);
+        arms[Direction.EAST.ordinal()] = Block.box(centerMax, armMin, armMin, 16, armMax, armMax);
 
         VoxelShape[] cache = new VoxelShape[64];
         for (int i = 0; i < 64; i++) {
@@ -309,6 +312,6 @@ public abstract class DuctBlock extends Block implements EntityBlock {
 
     @Override
     protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        return false;
+        return true;
     }
 }
