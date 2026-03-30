@@ -76,6 +76,25 @@ public class MNLanguageProvider extends LanguageProvider {
         add("item.modular_networks.cover.filled", "%s Cover");
         addItem(MNItems.WRENCH, "Crescent Hammer");
 
+        addItem(MNItems.LEAD_INGOT, "Lead Ingot");
+        addItem(MNItems.LEAD_NUGGET, "Lead Nugget");
+        addItem(MNItems.TIN_INGOT, "Tin Ingot");
+        addItem(MNItems.TIN_NUGGET, "Tin Nugget");
+        addItem(MNItems.SILVER_INGOT, "Silver Ingot");
+        addItem(MNItems.SILVER_NUGGET, "Silver Nugget");
+        addItem(MNItems.INVAR_INGOT, "Invar Ingot");
+        addItem(MNItems.INVAR_NUGGET, "Invar Nugget");
+        addItem(MNItems.ELECTRUM_INGOT, "Electrum Ingot");
+        addItem(MNItems.ELECTRUM_NUGGET, "Electrum Nugget");
+        addItem(MNItems.BRONZE_INGOT, "Bronze Ingot");
+        addItem(MNItems.BRONZE_NUGGET, "Bronze Nugget");
+        addItem(MNItems.SIGNALUM_INGOT, "Signalum Ingot");
+        addItem(MNItems.SIGNALUM_NUGGET, "Signalum Nugget");
+        addItem(MNItems.ENDERIUM_INGOT, "Enderium Ingot");
+        addItem(MNItems.ENDERIUM_NUGGET, "Enderium Nugget");
+        addItem(MNItems.LUMIUM_INGOT, "Lumium Ingot");
+        addItem(MNItems.LUMIUM_NUGGET, "Lumium Nugget");
+
         add("info.modular_networks.duct.energy", "Transfers Redstone Flux (RF).");
         add("info.modular_networks.duct.fluid", "Transfers Fluids.");
         add("info.modular_networks.duct.fluidEnergy", "Transfers Fluids and Redstone Flux (RF).");

@@ -64,6 +64,25 @@ public class MNItemModelProvider extends ItemModelProvider {
         simpleItem(MNItems.RELAY, "relay");
         builtinEntityItem(MNItems.COVER, modLoc("item/cover"));
         simpleItem(MNItems.WRENCH, "crescent_hammer");
+
+        simpleItem(MNItems.LEAD_INGOT, "ingot_lead");
+        simpleItem(MNItems.LEAD_NUGGET, "nugget_lead");
+        simpleItem(MNItems.TIN_INGOT, "ingot_tin");
+        simpleItem(MNItems.TIN_NUGGET, "nugget_tin");
+        simpleItem(MNItems.SILVER_INGOT, "ingot_silver");
+        simpleItem(MNItems.SILVER_NUGGET, "nugget_silver");
+        simpleItem(MNItems.INVAR_INGOT, "ingot_invar");
+        simpleItem(MNItems.INVAR_NUGGET, "nugget_invar");
+        simpleItem(MNItems.ELECTRUM_INGOT, "ingot_electrum");
+        simpleItem(MNItems.ELECTRUM_NUGGET, "nugget_electrum");
+        simpleItem(MNItems.BRONZE_INGOT, "ingot_bronze");
+        simpleItem(MNItems.BRONZE_NUGGET, "nugget_bronze");
+        simpleItem(MNItems.SIGNALUM_INGOT, "ingot_signalum");
+        simpleItem(MNItems.SIGNALUM_NUGGET, "nugget_signalum");
+        simpleItem(MNItems.ENDERIUM_INGOT, "ingot_enderium");
+        simpleItem(MNItems.ENDERIUM_NUGGET, "nugget_enderium");
+        simpleItem(MNItems.LUMIUM_INGOT, "ingot_lumium");
+        simpleItem(MNItems.LUMIUM_NUGGET, "nugget_lumium");
     }
 
     private void simpleItem(DeferredItem<?> item, String texture) {

@@ -202,9 +202,14 @@ public class TransportSectionRenderer {
         }
         VertexConsumer consumer = context.getOrCreateChunkBuffer(coverType);
 
+        float nudge = 1.0F / 512.0F;
         PoseStack poseStack = context.getPoseStack();
         poseStack.pushPose();
-        poseStack.translate(pos.getX() & 15, pos.getY() & 15, pos.getZ() & 15);
+        poseStack.translate(
+                (pos.getX() & 15) + side.getStepX() * nudge,
+                (pos.getY() & 15) + side.getStepY() * nudge,
+                (pos.getZ() & 15) + side.getStepZ() * nudge
+        );
         PoseStack.Pose pose = poseStack.last();
         int light = LevelRenderer.getLightColor(context.getRegion(), pos);
 
