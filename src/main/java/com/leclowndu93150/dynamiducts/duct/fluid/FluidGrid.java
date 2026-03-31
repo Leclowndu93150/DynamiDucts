@@ -8,6 +8,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+
+import java.util.ArrayList;
+import java.util.List;
 public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
     protected final FluidGridTank tank;
@@ -109,20 +112,17 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     }
 
     private void tickTemperature() {
+        List<FluidDuctUnitTemperate> tempUnits = new ArrayList<>();
         for (FluidDuctUnit unit : nodeSet) {
-            if (unit instanceof FluidDuctUnitTemperate temperate) {
-                temperate.tickTemperature();
-                if (level instanceof ServerLevel serverLevel && serverLevel.random.nextInt(10) == 0) {
-                    temperate.spawnSmokeParticles(serverLevel);
-                }
-            }
+            if (unit instanceof FluidDuctUnitTemperate t) tempUnits.add(t);
         }
         for (FluidDuctUnit unit : idleSet) {
-            if (unit instanceof FluidDuctUnitTemperate temperate) {
-                temperate.tickTemperature();
-                if (level instanceof ServerLevel serverLevel && serverLevel.random.nextInt(10) == 0) {
-                    temperate.spawnSmokeParticles(serverLevel);
-                }
+            if (unit instanceof FluidDuctUnitTemperate t) tempUnits.add(t);
+        }
+        for (FluidDuctUnitTemperate temperate : tempUnits) {
+            temperate.tickTemperature();
+            if (level instanceof ServerLevel serverLevel && serverLevel.random.nextInt(10) == 0) {
+                temperate.spawnSmokeParticles(serverLevel);
             }
         }
     }
