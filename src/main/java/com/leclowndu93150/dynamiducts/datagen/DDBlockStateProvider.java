@@ -43,6 +43,10 @@ public class DDBlockStateProvider extends BlockStateProvider {
 
         DUCT_TEXTURES.put("item_duct_basic", "tin_trans");
         DUCT_TEXTURES.put("item_duct_basic_opaque", "tin");
+        DUCT_TEXTURES.put("item_duct_dense", "tin_trans");
+        DUCT_TEXTURES.put("item_duct_dense_opaque", "tin");
+        DUCT_TEXTURES.put("item_duct_vacuum", "tin_trans");
+        DUCT_TEXTURES.put("item_duct_vacuum_opaque", "tin");
         DUCT_TEXTURES.put("item_duct_fast", "tin_trans");
         DUCT_TEXTURES.put("item_duct_fast_opaque", "tin_alt");
         DUCT_TEXTURES.put("item_duct_energy", "tin_signalum_trans");
@@ -79,7 +83,8 @@ public class DDBlockStateProvider extends BlockStateProvider {
         String baseTex = DUCT_TEXTURES.getOrDefault(name, "structure");
         ResourceLocation texture = modLoc("block/duct/base/" + baseTex);
 
-        String renderType = baseTex.contains("trans") ? "cutout" : "solid";
+        boolean transparentSpecial = name.equals("item_duct_dense") || name.equals("item_duct_vacuum");
+        String renderType = (baseTex.contains("trans") || transparentSpecial) ? "cutout" : "solid";
 
         ModelFile center = models().getBuilder(name + "_center")
                 .parent(new ModelFile.UncheckedModelFile("block/block"))

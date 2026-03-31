@@ -107,6 +107,22 @@ public class DDBlockEntities {
             BLOCK_ENTITIES.register("item_duct_basic_opaque", () -> BlockEntityType.Builder.of(
                     (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_BASIC_OPAQUE.get(), pos, state, ItemDuctBlockEntity.Tier.BASIC, true),
                     DDBlocks.ITEM_DUCT_BASIC_OPAQUE.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ItemDuctBlockEntity>> ITEM_DUCT_DENSE =
+            BLOCK_ENTITIES.register("item_duct_dense", () -> BlockEntityType.Builder.of(
+                    (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_DENSE.get(), pos, state, ItemDuctBlockEntity.Tier.DENSE, false),
+                    DDBlocks.ITEM_DUCT_DENSE.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ItemDuctBlockEntity>> ITEM_DUCT_DENSE_OPAQUE =
+            BLOCK_ENTITIES.register("item_duct_dense_opaque", () -> BlockEntityType.Builder.of(
+                    (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_DENSE_OPAQUE.get(), pos, state, ItemDuctBlockEntity.Tier.DENSE, true),
+                    DDBlocks.ITEM_DUCT_DENSE_OPAQUE.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ItemDuctBlockEntity>> ITEM_DUCT_VACUUM =
+            BLOCK_ENTITIES.register("item_duct_vacuum", () -> BlockEntityType.Builder.of(
+                    (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_VACUUM.get(), pos, state, ItemDuctBlockEntity.Tier.VACUUM, false),
+                    DDBlocks.ITEM_DUCT_VACUUM.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ItemDuctBlockEntity>> ITEM_DUCT_VACUUM_OPAQUE =
+            BLOCK_ENTITIES.register("item_duct_vacuum_opaque", () -> BlockEntityType.Builder.of(
+                    (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_VACUUM_OPAQUE.get(), pos, state, ItemDuctBlockEntity.Tier.VACUUM, true),
+                    DDBlocks.ITEM_DUCT_VACUUM_OPAQUE.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ItemDuctBlockEntity>> ITEM_DUCT_FAST =
             BLOCK_ENTITIES.register("item_duct_fast", () -> BlockEntityType.Builder.of(
                     (pos, state) -> new ItemDuctBlockEntity(DDBlockEntities.ITEM_DUCT_FAST.get(), pos, state, ItemDuctBlockEntity.Tier.FAST, false),

@@ -85,6 +85,10 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
 
         reg("item_duct_basic", "tin_trans", "tin", null, 0);
         reg("item_duct_basic_opaque", "tin", "tin", null, 0);
+        regWithOverlay("item_duct_dense", "tin_trans", "tin", "dense");
+        regWithOverlay("item_duct_dense_opaque", "tin", "tin", "dense");
+        regWithOverlay("item_duct_vacuum", "tin_trans", "tin", "vacuum");
+        regWithOverlay("item_duct_vacuum_opaque", "tin", "tin", "vacuum");
         reg("item_duct_fast", "tin_trans", "tin", GLOWSTONE_STILL, 80);
         reg("item_duct_fast_opaque", "tin_alt", "tin", null, 0);
         reg("item_duct_energy", "tin_signalum_trans", "tin", null, 0);
@@ -105,10 +109,15 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         reg(name, base, connection, fluid, fluidAlpha, FrameType.NONE, null, null, null, 0);
     }
 
+    private static void regWithOverlay(String name, String base, String connection, String overlay) {
+        boolean opaque = base != null && !base.contains("trans");
+        DUCT_TEX.put(name, new DuctTextures(base, connection, null, 0, opaque, FrameType.NONE, null, null, null, 0, overlay));
+    }
+
     private static void reg(String name, String base, String connection, String fluid, int fluidAlpha,
                             FrameType frameType, String frame, String frameBand, String frameFluid, int frameFluidAlpha) {
         boolean opaque = base != null && !base.contains("trans");
-        DUCT_TEX.put(name, new DuctTextures(base, connection, fluid, fluidAlpha, opaque, frameType, frame, frameBand, frameFluid, frameFluidAlpha));
+        DUCT_TEX.put(name, new DuctTextures(base, connection, fluid, fluidAlpha, opaque, frameType, frame, frameBand, frameFluid, frameFluidAlpha, null));
     }
 
     public DuctBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
@@ -164,6 +173,15 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         if (tex.fluid != null && tex.fluidAlpha == 255) {
             renderTinted(ccrs, bufferSource, poseStack, DuctModels.modelFluidTubes[connectionMask], trans,
                     resolveSpritePath(tex.fluid), 255, itemRender);
+        }
+
+        if (tex.overlay != null) {
+            TextureAtlasSprite overlaySprite = getSprite("block/duct/base/" + tex.overlay);
+            IconTransformation overlayIcon = new IconTransformation(overlaySprite);
+            CCModel overlayModel = tex.opaque ? DuctModels.modelOpaqueTubes[connectionMask] : DuctModels.modelTransTubes[connectionMask];
+            ccrs.bind(getCutoutRenderType(itemRender), bufferSource, poseStack);
+            ccrs.baseColour = 0xFFFFFFFF;
+            overlayModel.render(ccrs, trans, overlayIcon);
         }
 
         if (itemRender && tex.base != null) {
@@ -666,7 +684,8 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         TRANSPORT
     }
 
-    private record DuctTextures(String base, String connection, String fluid, int fluidAlpha, boolean opaque,
-                                FrameType frameType, String frame, String frameBand, String frameFluid, int frameFluidAlpha) {
+    public record DuctTextures(String base, String connection, String fluid, int fluidAlpha, boolean opaque,
+                                FrameType frameType, String frame, String frameBand, String frameFluid, int frameFluidAlpha,
+                                String overlay) {
     }
 }

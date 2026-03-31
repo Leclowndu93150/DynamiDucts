@@ -38,6 +38,10 @@ public class DDLanguageProvider extends LanguageProvider {
 
         addBlock(DDBlocks.ITEM_DUCT_BASIC, "Itemduct");
         addBlock(DDBlocks.ITEM_DUCT_BASIC_OPAQUE, "Itemduct (Opaque)");
+        addBlock(DDBlocks.ITEM_DUCT_DENSE, "Dense Itemduct");
+        addBlock(DDBlocks.ITEM_DUCT_DENSE_OPAQUE, "Dense Itemduct (Opaque)");
+        addBlock(DDBlocks.ITEM_DUCT_VACUUM, "Vacuum Itemduct");
+        addBlock(DDBlocks.ITEM_DUCT_VACUUM_OPAQUE, "Vacuum Itemduct (Opaque)");
         addBlock(DDBlocks.ITEM_DUCT_FAST, "Impulse Itemduct");
         addBlock(DDBlocks.ITEM_DUCT_FAST_OPAQUE, "Impulse Itemduct (Opaque)");
         addBlock(DDBlocks.ITEM_DUCT_ENERGY, "Signalum-Plated Itemduct");
@@ -156,6 +160,9 @@ public class DDLanguageProvider extends LanguageProvider {
         add("info.dynamiducts.filter.routeType.1", "Furthest-First");
         add("info.dynamiducts.filter.routeType.2", "Random");
         add("info.dynamiducts.filter.routeType.3", "Round Robin");
+        add("info.dynamiducts.filter.decRetainSize", "Dec. Max Total Items in Inventory");
+        add("info.dynamiducts.filter.incRetainSize", "Inc. Max Total Items in Inventory");
+        add("info.dynamiducts.filter.zeroRetainSize", "Infinite");
 
         add("info.dynamiducts.servo.extractRate", "Extraction Rate");
         add("info.dynamiducts.servo.maxStackSize", "Max Stack Size");

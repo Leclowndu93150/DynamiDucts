@@ -71,6 +71,14 @@ public class DDBlocks {
             () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.BASIC, false));
     public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_BASIC_OPAQUE = BLOCKS.register("item_duct_basic_opaque",
             () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.BASIC, true));
+    public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_DENSE = BLOCKS.register("item_duct_dense",
+            () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.DENSE, false));
+    public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_DENSE_OPAQUE = BLOCKS.register("item_duct_dense_opaque",
+            () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.DENSE, true));
+    public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_VACUUM = BLOCKS.register("item_duct_vacuum",
+            () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.VACUUM, false));
+    public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_VACUUM_OPAQUE = BLOCKS.register("item_duct_vacuum_opaque",
+            () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.VACUUM, true));
     public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_FAST = BLOCKS.register("item_duct_fast",
             () -> new ItemDuctBlock(ductProps(), ItemDuctBlockEntity.Tier.FAST, false));
     public static final DeferredBlock<ItemDuctBlock> ITEM_DUCT_FAST_OPAQUE = BLOCKS.register("item_duct_fast_opaque",

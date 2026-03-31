@@ -52,6 +52,9 @@ public class RouteCache {
     }
 
     public Route getRouteBetween(ItemDuctUnit from, ItemDuctUnit to, Direction insertionSide, Set<ItemDuctUnit> allNodes) {
+        if (from.getPos().equals(to.getPos())) {
+            return new Route(to.getPos(), insertionSide, List.of(), 0);
+        }
         List<Route> routes = getRoutes(from, allNodes);
         Route fallback = null;
         for (Route route : routes) {
@@ -79,6 +82,14 @@ public class RouteCache {
 
         visited.put(source.getPos(), 0);
         queue.add(new PathNode(source, null, null, 0));
+
+        if (source.isNode()) {
+            for (Direction dir : Direction.values()) {
+                if (source.getTileCache(dir) != null) {
+                    routes.add(new Route(source.getPos(), dir, List.of(), 0));
+                }
+            }
+        }
 
         while (!queue.isEmpty()) {
             PathNode current = queue.poll();

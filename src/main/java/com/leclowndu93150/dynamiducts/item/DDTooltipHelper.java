@@ -12,7 +12,6 @@ import com.leclowndu93150.dynamiducts.blockentity.ItemDuctBlockEntity;
 import com.leclowndu93150.dynamiducts.blockentity.TransportDuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.AttachmentTier;
 import com.leclowndu93150.dynamiducts.init.DDBlocks;
-import com.leclowndu93150.dynamiducts.init.DDDataComponents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -38,8 +37,6 @@ public final class DDTooltipHelper {
     }
 
     private static final int DEFAULT_ENERGY_BASE_TRANSFER = 1000;
-    private static final byte PATHWEIGHT_DENSE = 1;
-    private static final byte PATHWEIGHT_VACUUM = 2;
     private static final int[] SERVO_FLUID_THROTTLE = {50, 75, 100, 150, 200};
     private static final String[] FILTER_FLAG_KEYS = {
             "info.dynamiducts.filter.whiteList.off",
@@ -160,6 +157,14 @@ public final class DDTooltipHelper {
         ItemDuctBlockEntity.Tier tier = block.getTier();
         switch (tier) {
             case BASIC -> tooltip.add(info("info.dynamiducts.duct.item"));
+            case DENSE -> {
+                tooltip.add(info("info.dynamiducts.duct.item"));
+                tooltip.add(info("info.dynamiducts.duct.dense"));
+            }
+            case VACUUM -> {
+                tooltip.add(info("info.dynamiducts.duct.item"));
+                tooltip.add(info("info.dynamiducts.duct.vacuum"));
+            }
             case FAST -> {
                 tooltip.add(info("info.dynamiducts.duct.item"));
                 tooltip.add(info("info.dynamiducts.duct.itemFast"));
@@ -172,14 +177,6 @@ public final class DDTooltipHelper {
                 tooltip.add(info("info.dynamiducts.duct.itemEnergy"));
                 tooltip.add(transferLine(Component.literal(Integer.toString(getHybridEnergyRate())).withStyle(ChatFormatting.YELLOW)));
                 tooltip.add(info("info.dynamiducts.duct.itemFast"));
-            }
-        }
-        Byte pathWeight = stack.get(DDDataComponents.DUCT_PATH_WEIGHT.get());
-        if (pathWeight != null) {
-            if (pathWeight == PATHWEIGHT_DENSE) {
-                tooltip.add(info("info.dynamiducts.duct.dense"));
-            } else if (pathWeight == PATHWEIGHT_VACUUM) {
-                tooltip.add(info("info.dynamiducts.duct.vacuum"));
             }
         }
     }

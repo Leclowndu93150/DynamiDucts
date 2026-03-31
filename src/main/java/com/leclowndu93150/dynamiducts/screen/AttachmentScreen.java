@@ -1,6 +1,8 @@
 package com.leclowndu93150.dynamiducts.screen;
 
 import com.leclowndu93150.dynamiducts.DynamiDucts;
+import com.leclowndu93150.dynamiducts.attachment.retriever.RetrieverItem;
+import com.leclowndu93150.dynamiducts.attachment.servo.ServoItem;
 import com.leclowndu93150.dynamiducts.client.gui.widget.SheetButton;
 import com.leclowndu93150.dynamiducts.client.gui.widget.tab.InfoSideTabWidget;
 import com.leclowndu93150.dynamiducts.client.gui.widget.tab.RedstoneControlTabWidget;
@@ -43,6 +45,10 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
 
     private InfoSideTabWidget infoTab;
     private RedstoneControlTabWidget redstoneTab;
+    private SheetButton decStackButton;
+    private SheetButton incStackButton;
+    private SheetButton decRetainButton;
+    private SheetButton incRetainButton;
 
     public InfoSideTabWidget getInfoTab() { return infoTab; }
     public RedstoneControlTabWidget getRedstoneTab() { return redstoneTab; }
@@ -93,23 +99,39 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
             }
         }
 
-        if (attachment.isServo()) {
+        if (showsStackControls(attachment)) {
             int decX = leftPos + 137;
             int incX = leftPos + 153;
             int stackY = topPos + 57;
-            final SheetButton[] decRef = new SheetButton[1];
-            decRef[0] = addRenderableWidget(new SheetButton(
+            decStackButton = addRenderableWidget(new SheetButton(
                     decX, stackY, 14, 14, TEXTURE, 256, 256,
-                    () -> new SheetButton.Frame(216, isHovered(decRef[0]) ? 134 : 120),
+                    () -> getQuantityButtonFrame(decStackButton, 216),
                     (button, mouseButton) -> onDecStackSize(mouseButton),
                     this::getDecStackTooltip
             ));
-            final SheetButton[] incRef = new SheetButton[1];
-            incRef[0] = addRenderableWidget(new SheetButton(
+            incStackButton = addRenderableWidget(new SheetButton(
                     incX, stackY, 14, 14, TEXTURE, 256, 256,
-                    () -> new SheetButton.Frame(230, isHovered(incRef[0]) ? 134 : 120),
+                    () -> getQuantityButtonFrame(incStackButton, 230),
                     (button, mouseButton) -> onIncStackSize(mouseButton),
                     this::getIncStackTooltip
+            ));
+        }
+
+        if (showsRetainControls(attachment)) {
+            int decX = leftPos + 137;
+            int incX = leftPos + 153;
+            int retainY = topPos + 28;
+            decRetainButton = addRenderableWidget(new SheetButton(
+                    decX, retainY, 14, 14, TEXTURE, 256, 256,
+                    () -> getQuantityButtonFrame(decRetainButton, 216),
+                    (button, mouseButton) -> onDecRetainSize(mouseButton),
+                    this::getDecRetainTooltip
+            ));
+            incRetainButton = addRenderableWidget(new SheetButton(
+                    incX, retainY, 14, 14, TEXTURE, 256, 256,
+                    () -> getQuantityButtonFrame(incRetainButton, 230),
+                    (button, mouseButton) -> onIncRetainSize(mouseButton),
+                    this::getIncRetainTooltip
             ));
         }
 
@@ -142,7 +164,21 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         ConnectionBase attachment = menu.getAttachment();
 
-        if (attachment.isServo()) {
+        if (showsRetainControls(attachment)) {
+            int retainSize = getDisplayedRetainSize();
+            int xQty = 146;
+            if (retainSize == 0) {
+                xQty -= 9;
+                graphics.drawString(font, Component.translatable("info.dynamiducts.filter.zeroRetainSize"),
+                        xQty, 18, 0x404040, false);
+            } else {
+                if (retainSize < 10) xQty += 6;
+                else if (retainSize >= 100) xQty -= 3;
+                graphics.drawString(font, Integer.toString(retainSize), xQty, 18, 0x404040, false);
+            }
+        }
+
+        if (showsStackControls(attachment)) {
             int stackSize = getDisplayedStackSize();
             String text = String.valueOf(stackSize);
             int xQty = 146;
@@ -156,6 +192,12 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         renderTooltip(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected void containerTick() {
+        super.containerTick();
+        updateQuantityButtons();
     }
 
     private int getFlagButtonCount(ConnectionBase attachment) {
@@ -229,6 +271,26 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
         sendConfig(AttachmentConfigPayload.ACTION_SET_MAX_STOCK, updated);
     }
 
+    private void onDecRetainSize(int mouseButton) {
+        int current = getDisplayedRetainSize();
+        int updated = clampRetainSize(current - getStackDelta(mouseButton));
+        if (updated == current) {
+            return;
+        }
+        menu.setLocalMaxStock(updated);
+        sendConfig(AttachmentConfigPayload.ACTION_SET_MAX_STOCK, updated);
+    }
+
+    private void onIncRetainSize(int mouseButton) {
+        int current = getDisplayedRetainSize();
+        int updated = clampRetainSize(current + getStackDelta(mouseButton));
+        if (updated == current) {
+            return;
+        }
+        menu.setLocalMaxStock(updated);
+        sendConfig(AttachmentConfigPayload.ACTION_SET_MAX_STOCK, updated);
+    }
+
     private SheetButton.Frame getFlagFrame(int flagIndex, SheetButton button) {
         boolean active = switch (flagIndex) {
             case 0 -> menu.isWhitelist();
@@ -281,13 +343,29 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
         return Component.translatable("info.dynamiducts.servo.incStackSize", getStackDeltaLabel());
     }
 
+    private Component getDecRetainTooltip() {
+        return Component.translatable("info.dynamiducts.filter.decRetainSize");
+    }
+
+    private Component getIncRetainTooltip() {
+        return Component.translatable("info.dynamiducts.filter.incRetainSize");
+    }
+
     private int getDisplayedStackSize() {
         int configured = menu.getMaxStock();
         return configured > 0 ? configured : menu.getAttachment().getTier().stackSize();
     }
 
+    private int getDisplayedRetainSize() {
+        return Math.max(menu.getMaxStock(), 0);
+    }
+
     private int clampStackSize(int value) {
         return Math.max(1, Math.min(value, menu.getAttachment().getTier().stackSize()));
+    }
+
+    private int clampRetainSize(int value) {
+        return Math.max(0, Math.min(value, getRetainLimit()));
     }
 
     private int getStackDelta(int mouseButton) {
@@ -299,6 +377,49 @@ public class AttachmentScreen extends AbstractContainerScreen<AttachmentMenu> {
 
     private String getStackDeltaLabel() {
         return Integer.toString(getStackDelta(0));
+    }
+
+    private int getRetainLimit() {
+        return switch (menu.getAttachment().getTier().index()) {
+            case 2 -> 64;
+            case 3 -> 128;
+            case 4 -> 320;
+            default -> 0;
+        };
+    }
+
+    private void updateQuantityButtons() {
+        if (decStackButton != null && incStackButton != null) {
+            int stackSize = getDisplayedStackSize();
+            decStackButton.active = stackSize > 1;
+            incStackButton.active = stackSize < menu.getAttachment().getTier().stackSize();
+        }
+
+        if (decRetainButton != null && incRetainButton != null) {
+            int retainSize = getDisplayedRetainSize();
+            decRetainButton.active = retainSize > 0;
+            incRetainButton.active = retainSize < getRetainLimit();
+        }
+    }
+
+    private SheetButton.Frame getQuantityButtonFrame(SheetButton button, int u) {
+        int v;
+        if (button == null || !button.active) {
+            v = 148;
+        } else if (isHovered(button)) {
+            v = 134;
+        } else {
+            v = 120;
+        }
+        return new SheetButton.Frame(u, v);
+    }
+
+    private boolean showsStackControls(ConnectionBase attachment) {
+        return attachment instanceof ServoItem;
+    }
+
+    private boolean showsRetainControls(ConnectionBase attachment) {
+        return attachment instanceof RetrieverItem && attachment.getTier().index() >= 2;
     }
 
     private static boolean isHovered(SheetButton button) {

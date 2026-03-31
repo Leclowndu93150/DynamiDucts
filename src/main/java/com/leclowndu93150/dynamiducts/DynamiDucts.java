@@ -124,7 +124,10 @@ public class DynamiDucts {
             ductRenderer(event, DDBlockEntities.ITEM_DUCT_ENERGY_OPAQUE, true);
             ductRenderer(event, DDBlockEntities.ITEM_DUCT_ENERGY_FAST, true);
             ductRenderer(event, DDBlockEntities.ITEM_DUCT_ENERGY_FAST_OPAQUE, true);
-
+            ductRenderer(event, DDBlockEntities.ITEM_DUCT_DENSE, true);
+            ductRenderer(event, DDBlockEntities.ITEM_DUCT_DENSE_OPAQUE, true);
+            ductRenderer(event, DDBlockEntities.ITEM_DUCT_VACUUM, true);
+            ductRenderer(event, DDBlockEntities.ITEM_DUCT_VACUUM_OPAQUE, true);
 
             ductRenderer(event, DDBlockEntities.TRANSPORT_DUCT_BASIC, false);
             ductRenderer(event, DDBlockEntities.TRANSPORT_DUCT_LONG_RANGE, false);
@@ -173,6 +176,10 @@ public class DynamiDucts {
                     DDItems.ITEM_DUCT_ENERGY_OPAQUE,
                     DDItems.ITEM_DUCT_ENERGY_FAST,
                     DDItems.ITEM_DUCT_ENERGY_FAST_OPAQUE,
+                    DDItems.ITEM_DUCT_DENSE,
+                    DDItems.ITEM_DUCT_DENSE_OPAQUE,
+                    DDItems.ITEM_DUCT_VACUUM,
+                    DDItems.ITEM_DUCT_VACUUM_OPAQUE,
                     DDItems.TRANSPORT_DUCT_BASIC,
                     DDItems.TRANSPORT_DUCT_LONG_RANGE,
                     DDItems.TRANSPORT_DUCT_LINKING,

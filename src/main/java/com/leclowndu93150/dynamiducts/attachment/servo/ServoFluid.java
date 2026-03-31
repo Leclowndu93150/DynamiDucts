@@ -53,6 +53,7 @@ public class ServoFluid extends ConnectionBase {
 
         FluidStack drained = source.drain(tier.fluidDrainAmount(), IFluidHandler.FluidAction.SIMULATE);
         if (drained.isEmpty()) return;
+        if (!filter.matchesFluid(drained)) return;
 
         int filled = fluidUnit.getGrid().fill(drained, IFluidHandler.FluidAction.EXECUTE);
         if (filled > 0) {

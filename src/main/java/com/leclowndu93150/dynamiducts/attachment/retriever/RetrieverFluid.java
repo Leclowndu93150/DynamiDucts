@@ -45,6 +45,7 @@ public class RetrieverFluid extends ConnectionBase {
 
                 FluidStack drained = source.drain(tier.fluidDrainAmount(), IFluidHandler.FluidAction.SIMULATE);
                 if (drained.isEmpty()) continue;
+                if (!filter.matchesFluid(drained)) continue;
 
                 int filled = fluidUnit.getGrid().fill(drained, IFluidHandler.FluidAction.EXECUTE);
                 if (filled > 0) {

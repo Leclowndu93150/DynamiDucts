@@ -50,7 +50,8 @@ public class RetrieverItem extends ConnectionBase {
         );
         if (localInv == null) return;
 
-        int maxStack = filter.getMaxStockOrDefault(tier.stackSize());
+        int maxStack = tier.multiStack() ? tier.stackSize() : Math.min(tier.stackSize(), 64);
+        int maxStock = filter.getMaxStock() <= 0 ? Integer.MAX_VALUE : filter.getMaxStock();
         List<Route> routes = grid.getSortedRoutes(localUnit, filter.getRouteType());
 
         for (Route route : routes) {
@@ -68,16 +69,23 @@ public class RetrieverItem extends ConnectionBase {
                 ItemStack peek = remoteInv.extractItem(slot, maxStack, true);
                 if (peek.isEmpty()) continue;
                 if (!filter.matchesItem(peek)) continue;
-                if (!canInsertInto(localInv, peek)) continue;
+                int retainSpace = getRetainSpace(localInv, peek, maxStock);
+                if (retainSpace <= 0) continue;
+                int requestAmount = Math.min(maxStack, retainSpace);
+                if (requestAmount <= 0) continue;
 
-                ItemStack extracted = remoteInv.extractItem(slot, maxStack, false);
+                peek = remoteInv.extractItem(slot, requestAmount, true);
+                if (peek.isEmpty()) continue;
+                if (!canInsertInto(localInv, peek, maxStock)) continue;
+
+                ItemStack extracted = remoteInv.extractItem(slot, requestAmount, false);
                 if (extracted.isEmpty()) continue;
 
-                if (tier.multiStack() && extracted.getCount() < maxStack) {
-                    for (int s = slot + 1; s < remoteInv.getSlots() && extracted.getCount() < maxStack; s++) {
-                        ItemStack other = remoteInv.extractItem(s, maxStack - extracted.getCount(), true);
+                if (tier.multiStack() && extracted.getCount() < requestAmount) {
+                    for (int s = slot + 1; s < remoteInv.getSlots() && extracted.getCount() < requestAmount; s++) {
+                        ItemStack other = remoteInv.extractItem(s, requestAmount - extracted.getCount(), true);
                         if (other.isEmpty() || !ItemStack.isSameItemSameComponents(extracted, other)) continue;
-                        ItemStack extra = remoteInv.extractItem(s, maxStack - extracted.getCount(), false);
+                        ItemStack extra = remoteInv.extractItem(s, requestAmount - extracted.getCount(), false);
                         if (!extra.isEmpty()) {
                             extracted.grow(extra.getCount());
                         }
@@ -96,12 +104,77 @@ public class RetrieverItem extends ConnectionBase {
         }
     }
 
-    private boolean canInsertInto(IItemHandler handler, ItemStack stack) {
-        ItemStack simulated = stack.copy();
+    private boolean canInsertInto(IItemHandler handler, ItemStack stack, int maxStock) {
+        int retainSpace = getRetainSpace(handler, stack, maxStock);
+        if (retainSpace <= 0) {
+            return false;
+        }
+
+        ItemStack simulated = stack.copyWithCount(Math.min(stack.getCount(), retainSpace));
         for (int i = 0; i < handler.getSlots() && !simulated.isEmpty(); i++) {
             simulated = handler.insertItem(i, simulated, true);
         }
-        return simulated.getCount() < stack.getCount();
+        return simulated.getCount() < Math.min(stack.getCount(), retainSpace);
+    }
+
+    private int getRetainSpace(IItemHandler handler, ItemStack stack, int maxStock) {
+        if (maxStock == Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+
+        int stored = 0;
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack existing = handler.getStackInSlot(i);
+            if (!existing.isEmpty() && ItemStack.isSameItemSameComponents(existing, stack)) {
+                stored += existing.getCount();
+                if (stored >= maxStock) {
+                    return 0;
+                }
+            }
+        }
+        stored += countInTransit(stack);
+        return Math.max(0, maxStock - stored);
+    }
+
+    private int countInTransit(ItemStack stack) {
+        var unit = parent.getDuctUnit(DuctToken.ITEM);
+        if (!(unit instanceof ItemDuctUnit localUnit)) return 0;
+        if (!(localUnit.getGrid() instanceof ItemGrid grid)) return 0;
+
+        int count = 0;
+        for (ItemDuctUnit ductUnit : grid.getNodeSet()) {
+            for (var item : ductUnit.getMyItems()) {
+                if (item.route.destination.equals(parent.getBlockPos())
+                        && item.route.insertionSide == side
+                        && ItemStack.isSameItemSameComponents(item.stack, stack)) {
+                    count += item.stack.getCount();
+                }
+            }
+            for (var item : ductUnit.getItemsToAdd()) {
+                if (item.route.destination.equals(parent.getBlockPos())
+                        && item.route.insertionSide == side
+                        && ItemStack.isSameItemSameComponents(item.stack, stack)) {
+                    count += item.stack.getCount();
+                }
+            }
+        }
+        for (ItemDuctUnit ductUnit : grid.getIdleSet()) {
+            for (var item : ductUnit.getMyItems()) {
+                if (item.route.destination.equals(parent.getBlockPos())
+                        && item.route.insertionSide == side
+                        && ItemStack.isSameItemSameComponents(item.stack, stack)) {
+                    count += item.stack.getCount();
+                }
+            }
+            for (var item : ductUnit.getItemsToAdd()) {
+                if (item.route.destination.equals(parent.getBlockPos())
+                        && item.route.insertionSide == side
+                        && ItemStack.isSameItemSameComponents(item.stack, stack)) {
+                    count += item.stack.getCount();
+                }
+            }
+        }
+        return count;
     }
 
     private ItemDuctUnit findNode(net.minecraft.core.BlockPos pos, ItemGrid grid) {

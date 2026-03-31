@@ -6,6 +6,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.FluidUtil;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class FilterLogic {
     private int maxStock = -1;
 
     private Set<String> cachedModIds;
+    private Set<String> cachedFluidModIds;
     private boolean needsRecalc = true;
 
     public FilterLogic(int slotCount) {
@@ -70,9 +72,14 @@ public class FilterLogic {
         if (!needsRecalc) return;
         needsRecalc = false;
         cachedModIds = new HashSet<>();
+        cachedFluidModIds = new HashSet<>();
         for (ItemStack filter : filterStacks) {
             if (!filter.isEmpty()) {
                 cachedModIds.add(filter.getItem().builtInRegistryHolder().key().location().getNamespace());
+                FluidStack fluid = getFilterFluid(filter);
+                if (!fluid.isEmpty()) {
+                    cachedFluidModIds.add(fluid.getFluid().builtInRegistryHolder().key().location().getNamespace());
+                }
             }
         }
     }
@@ -82,12 +89,30 @@ public class FilterLogic {
     }
 
     public boolean matchesFluid(FluidStack stack) {
-        if (stack.isEmpty()) return whitelist && hasNoFilters();
+        if (stack.isEmpty()) return false;
 
+        if (matchModId) {
+            recalcIfNeeded();
+            if (!cachedFluidModIds.isEmpty()) {
+                String mod = stack.getFluid().builtInRegistryHolder().key().location().getNamespace();
+                if (cachedFluidModIds.contains(mod)) return whitelist;
+            }
+        }
+
+        boolean found = false;
         for (ItemStack filter : filterStacks) {
             if (filter.isEmpty()) continue;
+            FluidStack filterFluid = getFilterFluid(filter);
+            if (!filterFluid.isEmpty() && FluidStack.isSameFluidSameComponents(stack, filterFluid)) {
+                found = true;
+                break;
+            }
         }
-        return whitelist;
+        return whitelist == found;
+    }
+
+    private static FluidStack getFilterFluid(ItemStack filter) {
+        return FluidUtil.getFluidContained(filter).orElse(FluidStack.EMPTY);
     }
 
     private boolean hasNoFilters() {

@@ -42,6 +42,10 @@ public class DDCapabilities {
     private static void registerItemCaps(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_BASIC.get(), (be, dir) -> be.getItemCapability(dir));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_BASIC_OPAQUE.get(), (be, dir) -> be.getItemCapability(dir));
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_DENSE.get(), (be, dir) -> be.getItemCapability(dir));
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_DENSE_OPAQUE.get(), (be, dir) -> be.getItemCapability(dir));
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_VACUUM.get(), (be, dir) -> be.getItemCapability(dir));
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_VACUUM_OPAQUE.get(), (be, dir) -> be.getItemCapability(dir));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_FAST.get(), (be, dir) -> be.getItemCapability(dir));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_FAST_OPAQUE.get(), (be, dir) -> be.getItemCapability(dir));
         event.registerBlockEntity(Capabilities.ItemHandler.BLOCK, DDBlockEntities.ITEM_DUCT_ENERGY.get(), (be, dir) -> be.getItemCapability(dir));

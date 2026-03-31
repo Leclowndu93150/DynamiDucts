@@ -80,6 +80,14 @@ public class DDItems {
             () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_BASIC.get(), new Item.Properties(), TIP_ITEM));
     public static final DeferredItem<DuctBlockItem> ITEM_DUCT_BASIC_OPAQUE = ITEMS.register("item_duct_basic_opaque",
             () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_BASIC_OPAQUE.get(), new Item.Properties(), TIP_ITEM));
+    public static final DeferredItem<DuctBlockItem> ITEM_DUCT_DENSE = ITEMS.register("item_duct_dense",
+            () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_DENSE.get(), new Item.Properties(), TIP_ITEM));
+    public static final DeferredItem<DuctBlockItem> ITEM_DUCT_DENSE_OPAQUE = ITEMS.register("item_duct_dense_opaque",
+            () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_DENSE_OPAQUE.get(), new Item.Properties(), TIP_ITEM));
+    public static final DeferredItem<DuctBlockItem> ITEM_DUCT_VACUUM = ITEMS.register("item_duct_vacuum",
+            () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_VACUUM.get(), new Item.Properties(), TIP_ITEM));
+    public static final DeferredItem<DuctBlockItem> ITEM_DUCT_VACUUM_OPAQUE = ITEMS.register("item_duct_vacuum_opaque",
+            () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_VACUUM_OPAQUE.get(), new Item.Properties(), TIP_ITEM));
     public static final DeferredItem<DuctBlockItem> ITEM_DUCT_FAST = ITEMS.register("item_duct_fast",
             () -> new DuctBlockItem(DDBlocks.ITEM_DUCT_FAST.get(), new Item.Properties().rarity(Rarity.UNCOMMON), TIP_ITEM, TIP_ITEM_FAST));
     public static final DeferredItem<DuctBlockItem> ITEM_DUCT_FAST_OPAQUE = ITEMS.register("item_duct_fast_opaque",

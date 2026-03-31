@@ -89,6 +89,7 @@ public class ServoItem extends ConnectionBase {
         for (Route route : routes) {
             for (ItemDuctUnit node : grid.getNodeSet()) {
                 if (!node.getPos().equals(route.destination)) continue;
+                if (!grid.acceptsDestinationItem(node, route.insertionSide, stack)) continue;
 
                 IItemHandler target = node.getTileCache(route.insertionSide);
                 if (target == null) continue;

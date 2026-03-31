@@ -130,6 +130,10 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         ItemDuctUnit destNode = nodesByPos.get(tItem.route.destination);
 
         if (destNode != null) {
+            if (!acceptsDestinationItem(destNode, tItem.route.insertionSide, tItem.stack)) {
+                bounceItem(tItem, currentUnit);
+                return;
+            }
             IItemHandler target = destNode.getTileCache(tItem.route.insertionSide);
             if (target != null) {
                 ItemStack remainder = insertIntoHandler(target, tItem.stack, false);
@@ -155,6 +159,7 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
 
             ItemDuctUnit node = nodesByPos.get(route.destination);
             if (node == null) continue;
+            if (!acceptsDestinationItem(node, route.insertionSide, item.stack)) continue;
 
             IItemHandler target = node.getTileCache(route.insertionSide);
             if (target == null) continue;
@@ -195,6 +200,7 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         for (Route route : routes) {
             ItemDuctUnit node = nodesByPos.get(route.destination);
             if (node == null) continue;
+            if (!acceptsDestinationItem(node, route.insertionSide, stack)) continue;
 
             IItemHandler target = node.getTileCache(route.insertionSide);
             if (target == null) continue;
@@ -230,6 +236,14 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
 
     private boolean passesFilter(ItemDuctUnit unit, Direction side, ItemStack stack) {
         Attachment att = unit.getParent().getAttachment(side);
+        if (att instanceof ConnectionBase conn && conn.isFilter()) {
+            return conn.getFilter().matchesItem(stack);
+        }
+        return true;
+    }
+
+    public boolean acceptsDestinationItem(ItemDuctUnit node, Direction insertionSide, ItemStack stack) {
+        Attachment att = node.getParent().getAttachment(insertionSide);
         if (att instanceof ConnectionBase conn && conn.isFilter()) {
             return conn.getFilter().matchesItem(stack);
         }

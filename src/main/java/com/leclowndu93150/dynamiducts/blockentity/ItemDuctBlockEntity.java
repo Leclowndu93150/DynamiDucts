@@ -27,7 +27,7 @@ public class ItemDuctBlockEntity extends DuctBlockEntity {
     @Override
     protected void initDuctUnits() {
         int speed = tier.isFast() ? MNConfig.itemFastSpeed : MNConfig.itemBaseSpeed;
-        addDuctUnit(new ItemDuctUnit(this, speed, !opaque));
+        addDuctUnit(new ItemDuctUnit(this, speed, !opaque, tier.pathWeight()));
 
         if (tier.hasEnergy()) {
             int[] rates = MNConfig.energyTransferRates();
@@ -53,17 +53,21 @@ public class ItemDuctBlockEntity extends DuctBlockEntity {
     }
 
     public enum Tier {
-        BASIC(false, false),
-        FAST(false, true),
-        ENERGY(true, false),
-        ENERGY_FAST(true, true);
+        BASIC(false, false, 1),
+        DENSE(false, false, 1000),
+        VACUUM(false, false, 0),
+        FAST(false, true, 1),
+        ENERGY(true, false, 1),
+        ENERGY_FAST(true, true, 1);
 
         private final boolean hasEnergy;
         private final boolean fast;
+        private final int pathWeight;
 
-        Tier(boolean hasEnergy, boolean fast) {
+        Tier(boolean hasEnergy, boolean fast, int pathWeight) {
             this.hasEnergy = hasEnergy;
             this.fast = fast;
+            this.pathWeight = pathWeight;
         }
 
         public boolean hasEnergy() {
@@ -74,9 +78,15 @@ public class ItemDuctBlockEntity extends DuctBlockEntity {
             return fast;
         }
 
+        public int pathWeight() {
+            return pathWeight;
+        }
+
         public ItemDuctBlockEntity createBlockEntity(BlockPos pos, BlockState state, boolean opaque) {
             BlockEntityType<?> type = switch (this) {
                 case BASIC -> opaque ? DDBlockEntities.ITEM_DUCT_BASIC_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_BASIC.get();
+                case DENSE -> opaque ? DDBlockEntities.ITEM_DUCT_DENSE_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_DENSE.get();
+                case VACUUM -> opaque ? DDBlockEntities.ITEM_DUCT_VACUUM_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_VACUUM.get();
                 case FAST -> opaque ? DDBlockEntities.ITEM_DUCT_FAST_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_FAST.get();
                 case ENERGY -> opaque ? DDBlockEntities.ITEM_DUCT_ENERGY_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_ENERGY.get();
                 case ENERGY_FAST -> opaque ? DDBlockEntities.ITEM_DUCT_ENERGY_FAST_OPAQUE.get() : DDBlockEntities.ITEM_DUCT_ENERGY_FAST.get();

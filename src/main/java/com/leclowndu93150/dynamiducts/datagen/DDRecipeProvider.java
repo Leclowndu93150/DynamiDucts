@@ -186,6 +186,16 @@ public class DDRecipeProvider extends RecipeProvider {
                 .define('I', DDTags.INGOTS_TIN).define('L', DDTags.INGOTS_LEAD)
                 .unlockedBy("has_tin", has(DDTags.INGOTS_TIN)).save(output);
 
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, DDBlocks.ITEM_DUCT_DENSE, 1)
+                .requires(DDBlocks.ITEM_DUCT_BASIC)
+                .requires(DDTags.NUGGETS_LEAD).requires(DDTags.NUGGETS_LEAD).requires(DDTags.NUGGETS_LEAD)
+                .unlockedBy("has_basic", has(DDBlocks.ITEM_DUCT_BASIC)).save(output);
+
+        ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, DDBlocks.ITEM_DUCT_VACUUM, 1)
+                .requires(DDBlocks.ITEM_DUCT_BASIC)
+                .requires(DDTags.NUGGETS_SILVER).requires(DDTags.NUGGETS_SILVER).requires(DDTags.NUGGETS_SILVER)
+                .unlockedBy("has_basic", has(DDBlocks.ITEM_DUCT_BASIC)).save(output);
+
         ShapelessRecipeBuilder.shapeless(RecipeCategory.REDSTONE, DDBlocks.ITEM_DUCT_FAST, 1)
                 .requires(DDBlocks.ITEM_DUCT_BASIC).requires(Items.GLOWSTONE)
                 .unlockedBy("has_basic", has(DDBlocks.ITEM_DUCT_BASIC)).save(output);
@@ -201,6 +211,8 @@ public class DDRecipeProvider extends RecipeProvider {
                 .unlockedBy("has_energy", has(DDBlocks.ITEM_DUCT_ENERGY)).save(output);
 
         opaqueConversion(output, DDBlocks.ITEM_DUCT_BASIC, DDBlocks.ITEM_DUCT_BASIC_OPAQUE);
+        opaqueConversion(output, DDBlocks.ITEM_DUCT_DENSE, DDBlocks.ITEM_DUCT_DENSE_OPAQUE);
+        opaqueConversion(output, DDBlocks.ITEM_DUCT_VACUUM, DDBlocks.ITEM_DUCT_VACUUM_OPAQUE);
         opaqueConversion(output, DDBlocks.ITEM_DUCT_FAST, DDBlocks.ITEM_DUCT_FAST_OPAQUE);
         opaqueConversion(output, DDBlocks.ITEM_DUCT_ENERGY, DDBlocks.ITEM_DUCT_ENERGY_OPAQUE);
         opaqueConversion(output, DDBlocks.ITEM_DUCT_ENERGY_FAST, DDBlocks.ITEM_DUCT_ENERGY_FAST_OPAQUE);
