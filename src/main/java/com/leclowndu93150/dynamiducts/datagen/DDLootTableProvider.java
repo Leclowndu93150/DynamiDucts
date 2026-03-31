@@ -1,6 +1,6 @@
-package com.leclowndu93150.modular_networks.datagen;
+package com.leclowndu93150.dynamiducts.datagen;
 
-import com.leclowndu93150.modular_networks.init.MNBlocks;
+import com.leclowndu93150.dynamiducts.init.DDBlocks;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.loot.BlockLootSubProvider;
@@ -13,9 +13,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-public class MNLootTableProvider extends LootTableProvider {
+public class DDLootTableProvider extends LootTableProvider {
 
-    public MNLootTableProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
+    public DDLootTableProvider(PackOutput output, CompletableFuture<HolderLookup.Provider> registries) {
         super(output, Set.of(), List.of(
                 new SubProviderEntry(MNBlockLoot::new, LootContextParamSets.BLOCK)
         ), registries);
@@ -29,12 +29,12 @@ public class MNLootTableProvider extends LootTableProvider {
 
         @Override
         protected void generate() {
-            MNBlocks.BLOCKS.getEntries().forEach(entry -> dropSelf(entry.get()));
+            DDBlocks.BLOCKS.getEntries().forEach(entry -> dropSelf(entry.get()));
         }
 
         @Override
         protected Iterable<Block> getKnownBlocks() {
-            return MNBlocks.BLOCKS.getEntries().stream().map(e -> (Block) e.get())::iterator;
+            return DDBlocks.BLOCKS.getEntries().stream().map(e -> (Block) e.get())::iterator;
         }
     }
 }

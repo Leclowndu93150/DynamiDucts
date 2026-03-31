@@ -1,8 +1,8 @@
-package com.leclowndu93150.modular_networks.datagen;
+package com.leclowndu93150.dynamiducts.datagen;
 
-import com.leclowndu93150.modular_networks.ModularNetworks;
-import com.leclowndu93150.modular_networks.block.DuctBlock;
-import com.leclowndu93150.modular_networks.init.MNBlocks;
+import com.leclowndu93150.dynamiducts.DynamiDucts;
+import com.leclowndu93150.dynamiducts.block.DuctBlock;
+import com.leclowndu93150.dynamiducts.init.DDBlocks;
 import net.minecraft.core.Direction;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
@@ -11,13 +11,12 @@ import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
 import net.neoforged.neoforge.client.model.generators.ModelFile;
 import net.neoforged.neoforge.client.model.generators.MultiPartBlockStateBuilder;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class MNBlockStateProvider extends BlockStateProvider {
+public class DDBlockStateProvider extends BlockStateProvider {
 
     public static final Map<String, String> DUCT_TEXTURES = new HashMap<>();
 
@@ -60,13 +59,13 @@ public class MNBlockStateProvider extends BlockStateProvider {
         DUCT_TEXTURES.put("lux_duct", "lumium");
     }
 
-    public MNBlockStateProvider(PackOutput output, ExistingFileHelper exFileHelper) {
-        super(output, ModularNetworks.MODID, exFileHelper);
+    public DDBlockStateProvider(PackOutput output, ExistingFileHelper exFileHelper) {
+        super(output, DynamiDucts.MODID, exFileHelper);
     }
 
     @Override
     protected void registerStatesAndModels() {
-        MNBlocks.BLOCKS.getEntries().forEach(entry -> {
+        DDBlocks.BLOCKS.getEntries().forEach(entry -> {
             Block block = entry.get();
             if (block instanceof DuctBlock) {
                 registerDuctBlock(entry);
