@@ -1,0 +1,672 @@
+package com.leclowndu93150.dynamiducts.client.renderer;
+
+import codechicken.lib.render.CCModel;
+import codechicken.lib.render.CCRenderState;
+import codechicken.lib.vec.Translation;
+import codechicken.lib.vec.uv.IconTransformation;
+import com.leclowndu93150.dynamiducts.DynamiDucts;
+import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
+import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
+import com.leclowndu93150.dynamiducts.block.DuctBlock;
+import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
+import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
+import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
+import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
+import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
+import com.leclowndu93150.dynamiducts.duct.fluid.FluidDuctUnit;
+import codechicken.lib.model.CachedFormat;
+import codechicken.lib.model.Quad;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FastColor;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.client.RenderTypeHelper;
+import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
+import net.neoforged.neoforge.fluids.FluidStack;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEntity> {
+
+    private static final Map<String, DuctTextures> DUCT_TEX = new HashMap<>();
+    private static final String REDSTONE_STILL = "fluid/redstone_still";
+    private static final String GLOWSTONE_STILL = "fluid/glowstone_still";
+    private static final String CRYOTHEUM_STILL = "fluid/cryotheum_still";
+    private static final Translation HALF_TRANSLATION = new Translation(0.5, 0.5, 0.5);
+    private static final float COVER_THICKNESS = 1.0F / 16.0F;
+    private static final int[] COVER_AXIS_BY_SIDE = {1, 1, 2, 2, 0, 0};
+    private static final float[] COVER_SOFT_BOUNDS = {0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 1.0F};
+    private static final float COVER_EDGE_CLAMP = 1.0F / 512.0F;
+    private final BlockRenderDispatcher blockRenderer;
+    private final Map<String, TextureAtlasSprite> spriteCache = new HashMap<>();
+    private final Map<Block, String> ductNameCache = new HashMap<>();
+
+    static {
+        reg("energy_duct_basic", "lead_trans", "lead", "redstone_background", 255);
+        reg("energy_duct_hardened", "invar_trans", "invar", "redstone_background", 255);
+        reg("energy_duct_reinforced", "electrum_trans", "electrum", REDSTONE_STILL, 192);
+        reg("energy_duct_signalum", "signalum_trans", "signalum", REDSTONE_STILL, 192);
+        reg("energy_duct_resonant", "enderium_trans", "enderium", REDSTONE_STILL, 192);
+        reg("energy_duct_superconductor", "enderium_trans", "enderium", REDSTONE_STILL, 255, FrameType.FRAME, "electrum_trans", "electrum_band", CRYOTHEUM_STILL, 96);
+        reg("energy_duct_reinforced_empty", "electrum_trans", "electrum", null, 0);
+        reg("energy_duct_signalum_empty", "signalum_trans", "signalum", null, 0);
+        reg("energy_duct_resonant_empty", "enderium_trans", "enderium", null, 0);
+        reg("energy_duct_superconductor_empty", "enderium_trans", "enderium", REDSTONE_STILL, 192, FrameType.FRAME, "electrum_trans", "electrum_band", null, 0);
+
+        reg("fluid_duct_basic", "copper_trans", "copper", null, 0);
+        reg("fluid_duct_basic_opaque", "copper", "copper", null, 0);
+        reg("fluid_duct_hardened", "invar_trans", "invar", null, 0);
+        reg("fluid_duct_hardened_opaque", "invar", "invar", null, 0);
+        reg("fluid_duct_energy", "invar_signalum_trans", "invar", null, 0);
+        reg("fluid_duct_energy_opaque", "invar_signalum", "invar", null, 0);
+        reg("fluid_duct_super", "invar_trans", "invar", null, 0, FrameType.LARGE, "bronze_large", null, null, 0);
+        reg("fluid_duct_super_opaque", "invar", "invar", null, 0, FrameType.LARGE, "bronze_large", null, null, 0);
+
+        reg("item_duct_basic", "tin_trans", "tin", null, 0);
+        reg("item_duct_basic_opaque", "tin", "tin", null, 0);
+        reg("item_duct_fast", "tin_trans", "tin", GLOWSTONE_STILL, 80);
+        reg("item_duct_fast_opaque", "tin_alt", "tin", null, 0);
+        reg("item_duct_energy", "tin_signalum_trans", "tin", null, 0);
+        reg("item_duct_energy_opaque", "tin_signalum", "tin", null, 0);
+        reg("item_duct_energy_fast", "tin_signalum_trans", "tin", GLOWSTONE_STILL, 80);
+        reg("item_duct_energy_fast_opaque", "tin_alt_signalum", "tin", null, 0);
+
+        reg("transport_duct_basic", null, null, null, 0, FrameType.TRANSPORT, "copper_trans", "copper_band", "green_glass", 96);
+        reg("transport_duct_long_range", null, null, null, 0, FrameType.TRANSPORT, "lead_trans", "lead_band", "green_glass", 80);
+        reg("transport_duct_linking", null, null, null, 0, FrameType.TRANSPORT, "enderium_trans", "enderium_band", "green_glass", 128);
+        reg("transport_duct_frame", null, null, null, 0, FrameType.TRANSPORT, "copper_trans", "copper_band", null, 0);
+
+        reg("structural_duct", "structure", null, null, 0);
+        reg("lux_duct", "lumium", null, null, 0);
+    }
+
+    private static void reg(String name, String base, String connection, String fluid, int fluidAlpha) {
+        reg(name, base, connection, fluid, fluidAlpha, FrameType.NONE, null, null, null, 0);
+    }
+
+    private static void reg(String name, String base, String connection, String fluid, int fluidAlpha,
+                            FrameType frameType, String frame, String frameBand, String frameFluid, int frameFluidAlpha) {
+        boolean opaque = base != null && !base.contains("trans");
+        DUCT_TEX.put(name, new DuctTextures(base, connection, fluid, fluidAlpha, opaque, frameType, frame, frameBand, frameFluid, frameFluidAlpha));
+    }
+
+    public DuctBlockEntityRenderer(BlockEntityRendererProvider.Context context) {
+        this.blockRenderer = context.getBlockRenderDispatcher();
+        DuctModels.init();
+    }
+
+    @Override
+    public void render(DuctBlockEntity be, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource,
+                       int packedLight, int packedOverlay) {
+        BlockState state = be.getBlockState();
+        String ductName = ductNameCache.computeIfAbsent(state.getBlock(),
+                b -> b.builtInRegistryHolder().key().location().getPath());
+        DuctTextures tex = DUCT_TEX.getOrDefault(ductName, DUCT_TEX.get("structural_duct"));
+        boolean itemRender = isItemRender(be);
+
+        if (tex == null) {
+            return;
+        }
+
+        int connectionMask = getConnectionMask(be, state);
+        Translation trans = HALF_TRANSLATION;
+
+        CCRenderState ccrs = CCRenderState.instance();
+        ccrs.reset();
+        ccrs.brightness = packedLight;
+        ccrs.overlay = packedOverlay;
+        ccrs.baseColour = 0xFFFFFFFF;
+
+        try {
+            renderBase(ccrs, bufferSource, poseStack, trans, tex, connectionMask, state, be, itemRender);
+            if (!tex.opaque) {
+                renderDecorativeOverlays(ccrs, bufferSource, poseStack, trans, tex, connectionMask, be, itemRender);
+                renderFluidContents(be, ccrs, bufferSource, poseStack, trans, connectionMask, itemRender);
+            }
+            renderAttachments(be, ccrs, bufferSource, poseStack, trans);
+        } catch (Exception e) {
+            DynamiDucts.LOG.error("[DuctBESR] Exception during render at {}", be.getBlockPos(), e);
+        }
+    }
+
+    private void renderBase(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack,
+                             Translation trans, DuctTextures tex, int connectionMask,
+                             BlockState state, DuctBlockEntity be, boolean itemRender) {
+        if (tex.base != null) {
+            TextureAtlasSprite baseSprite = getSprite("block/duct/base/" + tex.base);
+            IconTransformation baseIcon = new IconTransformation(baseSprite);
+            ccrs.bind(getBaseRenderType(tex, itemRender), bufferSource, poseStack);
+            (tex.opaque ? DuctModels.modelOpaqueTubes[connectionMask] : DuctModels.modelTransTubes[connectionMask])
+                    .render(ccrs, trans, baseIcon);
+        }
+
+        if (tex.fluid != null && tex.fluidAlpha == 255) {
+            renderTinted(ccrs, bufferSource, poseStack, DuctModels.modelFluidTubes[connectionMask], trans,
+                    resolveSpritePath(tex.fluid), 255, itemRender);
+        }
+
+        if (itemRender && tex.base != null) {
+            TextureAtlasSprite endCapSprite = getSprite("block/duct/base/structure_trans");
+            IconTransformation endCapIcon = new IconTransformation(endCapSprite);
+            ccrs.bind(getCutoutRenderType(true), bufferSource, poseStack);
+            for (Direction dir : Direction.values()) {
+                if ((connectionMask & (1 << dir.ordinal())) != 0) {
+                    DuctModels.modelConnection[0][dir.ordinal()].render(ccrs, 4, 8, trans, endCapIcon);
+                }
+            }
+        }
+
+        if (tex.connection != null && !itemRender) {
+            TextureAtlasSprite connSprite = getSprite("block/duct/connection/" + tex.connection);
+            IconTransformation connIcon = new IconTransformation(connSprite);
+            ccrs.bind(getCutoutRenderType(false), bufferSource, poseStack);
+
+            for (Direction dir : Direction.values()) {
+                if (shouldRenderConnectionDetail(be, state, dir)) {
+                    DuctModels.modelConnection[1][dir.ordinal()].render(ccrs, trans, connIcon);
+                }
+            }
+        }
+
+        renderFrameBase(ccrs, bufferSource, poseStack, trans, tex, connectionMask, state, be, itemRender);
+    }
+
+    private void renderFrameBase(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack, Translation trans,
+                                 DuctTextures tex, int connectionMask, BlockState state, DuctBlockEntity be, boolean itemRender) {
+        if (tex.frameType == FrameType.NONE || tex.frame == null) {
+            return;
+        }
+
+        switch (tex.frameType) {
+            case SIDE -> renderSideTubes(ccrs, bufferSource, poseStack, trans, connectionMask, false, "block/duct/side_ducts", itemRender);
+            case FRAME -> {
+                TextureAtlasSprite frameSprite = getSprite("block/duct/base/" + tex.frame);
+                TextureAtlasSprite bandSprite = tex.frameBand == null ? null : getSprite("block/duct/base/" + tex.frameBand);
+                IconTransformation frameIcon = new IconTransformation(frameSprite);
+                IconTransformation bandIcon = bandSprite == null ? null : new IconTransformation(bandSprite);
+
+                for (Direction dir : Direction.values()) {
+                    if (!isConnected(be, state, dir)) {
+                        continue;
+                    }
+                    if (shouldRenderConnectionDetail(be, state, dir) && bandIcon != null) {
+                        ccrs.bind(getCutoutRenderType(itemRender), bufferSource, poseStack);
+                        DuctModels.modelFrameConnection[64 + dir.ordinal()].render(ccrs, trans, bandIcon);
+                        ccrs.bind(getRenderTypeForTexture(tex.frame, true, itemRender), bufferSource, poseStack);
+                        DuctModels.modelFrame[70 + dir.ordinal()].render(ccrs, trans, frameIcon);
+                    }
+                }
+
+                if (DuctModels.modelFrameConnection[connectionMask].verts.length != 0) {
+                    ccrs.bind(getRenderTypeForTexture(tex.frame, true, itemRender), bufferSource, poseStack);
+                    DuctModels.modelFrameConnection[connectionMask].render(ccrs, trans, frameIcon);
+                }
+            }
+            case LARGE -> {
+                ccrs.bind(getRenderTypeForTexture(tex.frame, false, itemRender), bufferSource, poseStack);
+                DuctModels.modelLargeTubes[connectionMask].render(ccrs, trans, new IconTransformation(getSprite("block/duct/base/" + tex.frame)));
+            }
+            case TRANSPORT -> {
+                TextureAtlasSprite frameSprite = getSprite("block/duct/base/" + tex.frame);
+                TextureAtlasSprite bandSprite = tex.frameBand == null ? null : getSprite("block/duct/base/" + tex.frameBand);
+                IconTransformation frameIcon = new IconTransformation(frameSprite);
+                IconTransformation bandIcon = bandSprite == null ? null : new IconTransformation(bandSprite);
+
+                for (Direction dir : Direction.values()) {
+                    if (shouldRenderConnectionDetail(be, state, dir) && bandIcon != null) {
+                        ccrs.bind(getCutoutRenderType(itemRender), bufferSource, poseStack);
+                        DuctModels.modelTransportConnection[64 + dir.ordinal()].render(ccrs, trans, bandIcon);
+                    }
+                }
+
+                if (DuctModels.modelTransportConnection[connectionMask].verts.length != 0) {
+                    ccrs.bind(getRenderTypeForTexture(tex.frame, true, itemRender), bufferSource, poseStack);
+                    DuctModels.modelTransportConnection[connectionMask].render(ccrs, trans, frameIcon);
+                }
+            }
+            case NONE -> {
+            }
+        }
+    }
+
+    private void renderDecorativeOverlays(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack,
+                                          Translation trans, DuctTextures tex, int connectionMask, DuctBlockEntity be, boolean itemRender) {
+        if (tex.fluid != null && tex.fluidAlpha > 0 && tex.fluidAlpha < 255) {
+            renderTinted(ccrs, bufferSource, poseStack, DuctModels.modelFluidTubes[connectionMask], trans,
+                    resolveSpritePath(tex.fluid), tex.fluidAlpha, itemRender);
+        }
+
+        if (tex.frameFluid == null || tex.frameFluidAlpha <= 0) {
+            return;
+        }
+
+        switch (tex.frameType) {
+            case SIDE -> renderSideTubes(ccrs, bufferSource, poseStack, trans, connectionMask, true, "block/duct/base/" + tex.frameFluid, tex.frameFluidAlpha, itemRender);
+            case FRAME -> {
+                TextureAtlasSprite frameFluidSprite = getSprite(resolveSpritePath(tex.frameFluid));
+                IconTransformation frameFluidIcon = new IconTransformation(frameFluidSprite);
+                ccrs.bind(getRenderTypeForTexture(resolveSpritePath(tex.frameFluid), true, itemRender), bufferSource, poseStack);
+                ccrs.baseColour = rgba(255, 255, 255, tex.frameFluidAlpha);
+
+                for (Direction dir : Direction.values()) {
+                    if (isConnected(be, be.getBlockState(), dir) && shouldRenderConnectionDetail(be, be.getBlockState(), dir)) {
+                        DuctModels.modelFrame[70 + dir.ordinal()].render(ccrs, trans, frameFluidIcon);
+                    }
+                }
+
+                if (DuctModels.modelFrame[connectionMask].verts.length != 0) {
+                    DuctModels.modelFrame[connectionMask].render(ccrs, trans, frameFluidIcon);
+                }
+                ccrs.baseColour = 0xFFFFFFFF;
+            }
+            case TRANSPORT -> {
+                TextureAtlasSprite frameFluidSprite = getSprite(resolveSpritePath(tex.frameFluid));
+                IconTransformation frameFluidIcon = new IconTransformation(frameFluidSprite);
+                ccrs.bind(getRenderTypeForTexture(resolveSpritePath(tex.frameFluid), true, itemRender), bufferSource, poseStack);
+                ccrs.baseColour = rgba(255, 255, 255, tex.frameFluidAlpha);
+                if (DuctModels.modelTransport[connectionMask].verts.length != 0) {
+                    DuctModels.modelTransport[connectionMask].render(ccrs, trans, frameFluidIcon);
+                }
+                ccrs.baseColour = 0xFFFFFFFF;
+            }
+            case LARGE, NONE -> {
+            }
+        }
+    }
+
+    private void renderFluidContents(DuctBlockEntity be, CCRenderState ccrs, MultiBufferSource bufferSource,
+                                     PoseStack poseStack, Translation trans, int connectionMask, boolean itemRender) {
+        var energyUnit = be.getDuctUnit(DuctToken.ENERGY);
+
+        var fluidUnit = be.getDuctUnit(DuctToken.FLUID);
+        if (fluidUnit instanceof FluidDuctUnit fdu && fdu.isTransparent()) {
+            FluidStack fluid = fdu.getVisualFluid();
+            int level = fdu.getVisualFluidLevel();
+            if (!fluid.isEmpty() && level > 0) {
+                IClientFluidTypeExtensions fluidExt = IClientFluidTypeExtensions.of(fluid.getFluid());
+                ResourceLocation stillTex = fluidExt.getStillTexture(fluid);
+                if (stillTex != null) {
+                    TextureAtlasSprite sprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(stillTex);
+                    IconTransformation icon = new IconTransformation(sprite);
+                    int color = argbToRgba(fluidExt.getTintColor(fluid));
+
+                    ccrs.bind(getTranslucentRenderType(itemRender), bufferSource, poseStack);
+                    ccrs.baseColour = color;
+                    if (level < 6) {
+                        CCModel[] models = DuctModels.modelFluid[level - 1];
+                        for (Direction dir : Direction.values()) {
+                            if ((connectionMask & (1 << dir.ordinal())) != 0) {
+                                models[dir.ordinal()].render(ccrs, trans, icon);
+                            }
+                        }
+                        models[6].render(ccrs, trans, icon);
+                    } else {
+                        DuctModels.modelFluidTubes[connectionMask].render(ccrs, trans, icon);
+                    }
+                    ccrs.baseColour = 0xFFFFFFFF;
+                }
+            }
+        }
+    }
+
+    private void renderSideTubes(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack,
+                                 Translation trans, int connectionMask, boolean inner, String spritePath, boolean itemRender) {
+        renderSideTubes(ccrs, bufferSource, poseStack, trans, connectionMask, inner, spritePath, 255, itemRender);
+    }
+
+    private void renderSideTubes(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack,
+                                 Translation trans, int connectionMask, boolean inner, String spritePath, int alpha, boolean itemRender) {
+        CCModel[] models = inner ? DuctModels.modelSideTubesInner : DuctModels.modelSideTubes;
+        TextureAtlasSprite sprite = getSprite(spritePath);
+        IconTransformation icon = new IconTransformation(sprite);
+
+        ccrs.bind(getRenderTypeForTexture(spritePath, inner || alpha < 255, itemRender), bufferSource, poseStack);
+        ccrs.baseColour = alpha == 255 ? 0xFFFFFFFF : rgba(255, 255, 255, alpha);
+        if (models[connectionMask].verts.length != 0) {
+            models[connectionMask].render(ccrs, trans, icon);
+        }
+        ccrs.baseColour = 0xFFFFFFFF;
+    }
+
+    private void renderTinted(CCRenderState ccrs, MultiBufferSource bufferSource, PoseStack poseStack, CCModel model,
+                              Translation trans, String spritePath, int alpha, boolean itemRender) {
+        TextureAtlasSprite sprite = getSprite(spritePath);
+        IconTransformation icon = new IconTransformation(sprite);
+        ccrs.bind(getRenderTypeForTexture(spritePath, alpha < 255, itemRender), bufferSource, poseStack);
+        ccrs.baseColour = alpha == 255 ? 0xFFFFFFFF : rgba(255, 255, 255, alpha);
+        model.render(ccrs, trans, icon);
+        ccrs.baseColour = 0xFFFFFFFF;
+    }
+
+    private void renderAttachments(DuctBlockEntity be, CCRenderState ccrs, MultiBufferSource bufferSource,
+                                    PoseStack poseStack, Translation trans) {
+        Attachment[] attachments = be.getAttachments();
+        if (attachments == null) return;
+
+        for (int i = 0; i < 6; i++) {
+            Attachment att = attachments[i];
+            if (att == null) continue;
+            String texPath;
+            CCModel model;
+
+            if (att instanceof ConnectionBase conn) {
+                int tierIndex = conn.getTier().index();
+                if (conn.isServo()) {
+                    texPath = "block/duct/attachment/servo/servo_base_0_" + tierIndex;
+                    model = DuctModels.modelConnection[getAttachmentModelIndex(conn)][i];
+                } else if (conn.isFilter()) {
+                    texPath = "block/duct/attachment/filter/filter_" + tierIndex;
+                    model = DuctModels.modelConnection[1][i];
+                } else if (conn.isRetriever()) {
+                    texPath = "block/duct/attachment/retriever/retriever_base_0_" + tierIndex;
+                    model = DuctModels.modelConnection[getAttachmentModelIndex(conn)][i];
+                } else {
+                    continue;
+                }
+            } else if (att instanceof Cover) {
+                renderCover((Cover) att, poseStack, bufferSource, ccrs.brightness, ccrs.overlay);
+                continue;
+            } else if (att instanceof Relay relay) {
+                texPath = "block/duct/attachment/signallers/signaller";
+                model = DuctModels.modelConnection[1 + (relay.getType() & 1)][i];
+            } else {
+                continue;
+            }
+
+            TextureAtlasSprite sprite = getSprite(texPath);
+            IconTransformation icon = new IconTransformation(sprite);
+
+            ccrs.bind(getCutoutRenderType(false), bufferSource, poseStack);
+            model.render(ccrs, trans, icon);
+        }
+    }
+
+    private void renderCover(Cover cover, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        renderCoverModel(cover.getCoverState(), cover.getParent().getLevel(), cover.getParent().getBlockPos(),
+                cover.getSide(), poseStack, bufferSource, packedLight, packedOverlay, 1.0F, 0.0F);
+    }
+
+    public static void renderCoverPreview(BlockState coverState, net.minecraft.world.level.Level level, BlockPos pos,
+                                          Direction side, PoseStack poseStack, MultiBufferSource bufferSource,
+                                          int packedLight, int packedOverlay, float alpha) {
+        renderCoverModel(coverState, level, pos, side, poseStack, bufferSource, packedLight, packedOverlay, alpha, 1.0F / 512.0F);
+    }
+
+    private static void renderCoverModel(BlockState coverState, net.minecraft.world.level.Level level, BlockPos pos,
+                                         Direction side, PoseStack poseStack, MultiBufferSource bufferSource,
+                                         int packedLight, int packedOverlay, float alpha, float outwardOffset) {
+        if (!com.leclowndu93150.dynamiducts.item.CoverItem.isValidCoverState(coverState)) {
+            return;
+        }
+
+        poseStack.pushPose();
+        if (outwardOffset != 0.0F) {
+            poseStack.translate(
+                    side.getStepX() * outwardOffset,
+                    side.getStepY() * outwardOffset,
+                    side.getStepZ() * outwardOffset
+            );
+        }
+
+        BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(coverState);
+        AABB bounds = DuctHitHelper.coverBox(side);
+        TextureAtlasSprite sideSprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                .apply(ResourceLocation.fromNamespaceAndPath(DynamiDucts.MODID, "block/duct/attachment/cover/cover_side"));
+        VertexConsumer consumer = bufferSource.getBuffer(ItemBlockRenderTypes.getRenderType(coverState, false));
+        PoseStack.Pose pose = poseStack.last();
+
+        for (BakedQuad quad : sliceCoverQuads(coverState, pos, model, side, bounds, sideSprite)) {
+            int tint = quad.isTinted()
+                    ? Minecraft.getInstance().getBlockColors().getColor(coverState, level, pos, quad.getTintIndex())
+                    : -1;
+            float red = tint == -1 ? 1.0F : FastColor.ARGB32.red(tint) / 255.0F;
+            float green = tint == -1 ? 1.0F : FastColor.ARGB32.green(tint) / 255.0F;
+            float blue = tint == -1 ? 1.0F : FastColor.ARGB32.blue(tint) / 255.0F;
+            consumer.putBulkData(pose, quad, red, green, blue, alpha, packedLight, packedOverlay);
+        }
+        poseStack.popPose();
+    }
+
+    public static List<BakedQuad> sliceCoverQuads(BlockState state, BlockPos pos, BakedModel model,
+                                                             Direction side, AABB bounds, TextureAtlasSprite sideSprite) {
+        List<BakedQuad> sourceQuads = new ArrayList<>();
+        long seed = state.getSeed(pos);
+
+        sourceQuads.addAll(model.getQuads(state, null, RandomSource.create(seed)));
+        for (Direction face : Direction.values()) {
+            sourceQuads.addAll(model.getQuads(state, face, RandomSource.create(seed)));
+        }
+
+        List<BakedQuad> result = new ArrayList<>(sourceQuads.size());
+        for (BakedQuad bakedQuad : sourceQuads) {
+            Quad quad = new Quad(CachedFormat.BLOCK);
+            quad.reset(CachedFormat.BLOCK);
+            quad.put(bakedQuad);
+            sliceCoverQuad(quad, side, bounds, sideSprite);
+            result.add(quad.bake());
+        }
+        return result;
+    }
+
+    private static void sliceCoverQuad(Quad quad, Direction side, AABB bounds, TextureAtlasSprite sideSprite) {
+        int sideIndex = side.ordinal();
+        int axis = COVER_AXIS_BY_SIDE[sideIndex];
+        float softBound = COVER_SOFT_BOUNDS[sideIndex];
+        float oppositeBound = 1.0F - softBound;
+        boolean differentFromNear = false;
+        boolean differentFromFar = false;
+        boolean[] flat = {true, true, true};
+        float[] first = quad.vertices[0].vec();
+        float[][] positions = new float[4][3];
+
+        for (int vertex = 0; vertex < 4; vertex++) {
+            float[] vec = quad.vertices[vertex].vec();
+            positions[vertex][0] = vec[0];
+            positions[vertex][1] = vec[1];
+            positions[vertex][2] = vec[2];
+            differentFromNear |= positions[vertex][axis] != softBound;
+            differentFromFar |= positions[vertex][axis] != oppositeBound;
+
+            if (vertex != 0) {
+                flat[0] &= vec[0] == first[0];
+                flat[1] &= vec[1] == first[1];
+                flat[2] &= vec[2] == first[2];
+            }
+        }
+
+        int slicedAxis = -1;
+        if (differentFromNear && differentFromFar) {
+            for (int axisIndex = 0; axisIndex < 3; axisIndex++) {
+                if (flat[axisIndex]) {
+                    if (axisIndex != axis) {
+                        slicedAxis = axisIndex;
+                        break;
+                    }
+                    differentFromNear = false;
+                }
+            }
+        }
+
+        for (int vertex = 0; vertex < 4; vertex++) {
+            boolean offFace = positions[vertex][axis] != softBound;
+            for (int axisIndex = 0; axisIndex < 3; axisIndex++) {
+                if (axisIndex == axis) {
+                    positions[vertex][axisIndex] = clampToCoverBounds(positions[vertex][axisIndex], bounds, axisIndex);
+                } else if (differentFromNear && differentFromFar && offFace) {
+                    positions[vertex][axisIndex] = clampToVisibleArea(positions[vertex][axisIndex]);
+                }
+            }
+
+            if (slicedAxis != -1) {
+                float u;
+                float v;
+                if (slicedAxis == 0) {
+                    u = positions[vertex][1];
+                    v = positions[vertex][2];
+                } else if (slicedAxis == 1) {
+                    u = positions[vertex][0];
+                    v = positions[vertex][2];
+                } else {
+                    u = positions[vertex][0];
+                    v = positions[vertex][1];
+                }
+                quad.vertices[vertex].uv()[0] = sideSprite.getU(clamp01(u));
+                quad.vertices[vertex].uv()[1] = sideSprite.getV(clamp01(v));
+            }
+
+            float[] vec = quad.vertices[vertex].vec();
+            vec[0] = positions[vertex][0];
+            vec[1] = positions[vertex][1];
+            vec[2] = positions[vertex][2];
+        }
+
+        if (slicedAxis != -1) {
+            quad.tintIndex = -1;
+            quad.sprite = sideSprite;
+        }
+        quad.calculateOrientation(true);
+    }
+
+    private static float clampToCoverBounds(float value, AABB bounds, int axis) {
+        double min = axis == 0 ? bounds.minX : axis == 1 ? bounds.minY : bounds.minZ;
+        double max = axis == 0 ? bounds.maxX : axis == 1 ? bounds.maxY : bounds.maxZ;
+        if (value < min) {
+            return (float) (min - (min - value) * COVER_EDGE_CLAMP);
+        }
+        if (value > max) {
+            return (float) (max + (value - max) * COVER_EDGE_CLAMP);
+        }
+        return value;
+    }
+
+    private static float clampToVisibleArea(float value) {
+        return Math.max(COVER_EDGE_CLAMP, Math.min(1.0F - COVER_EDGE_CLAMP, value));
+    }
+
+    private static float clamp01(float value) {
+        return Math.max(0.0F, Math.min(1.0F, value));
+    }
+
+    protected int getConnectionMask(DuctBlockEntity be, BlockState state) {
+        int mask = 0;
+        for (Direction dir : Direction.values()) {
+            if (isConnected(be, state, dir)) {
+                mask |= (1 << dir.ordinal());
+            }
+        }
+        return mask;
+    }
+
+    private boolean isConnected(DuctBlockEntity be, BlockState state, Direction dir) {
+        boolean connected = state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir));
+        Attachment attachment = be.getAttachment(dir);
+        return connected || (attachment != null && !(attachment instanceof Cover));
+    }
+
+    private boolean isExternalConnection(DuctBlockEntity be, BlockState state, Direction dir) {
+        if (!isConnected(be, state, dir)) {
+            return false;
+        }
+        if (be.getLevel() == null) return true;
+        return !(be.getLevel().getBlockState(be.getBlockPos().relative(dir)).getBlock() instanceof DuctBlock);
+    }
+
+    private boolean shouldRenderConnectionDetail(DuctBlockEntity be, BlockState state, Direction dir) {
+        if (!isConnected(be, state, dir)) {
+            return false;
+        }
+        if (be.getLevel() == null) {
+            return true;
+        }
+
+        BlockState neighborState = be.getLevel().getBlockState(be.getBlockPos().relative(dir));
+        if (!(neighborState.getBlock() instanceof DuctBlock)) {
+            return true;
+        }
+
+        // 1.12 renders connection hands/bands when the join is not a plain same-duct seam.
+        return neighborState.getBlock() != state.getBlock();
+    }
+
+    private TextureAtlasSprite getSprite(String path) {
+        return spriteCache.computeIfAbsent(path, p ->
+                Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                        .apply(ResourceLocation.fromNamespaceAndPath(DynamiDucts.MODID, p)));
+    }
+
+    private static String resolveSpritePath(String path) {
+        return path.startsWith("fluid/") ? "block/" + path : "block/duct/base/" + path;
+    }
+
+    private static boolean isItemRender(DuctBlockEntity be) {
+        return be.getLevel() == null;
+    }
+
+    private static RenderType getBaseRenderType(DuctTextures tex, boolean itemRender) {
+        return tex.opaque ? getCutoutRenderType(itemRender) : getTranslucentRenderType(itemRender);
+    }
+
+    private static RenderType getRenderTypeForTexture(String texture, boolean translucent, boolean itemRender) {
+        if (translucent || texture.contains("trans") || texture.contains("glass") || texture.contains("flux") || texture.contains("/fluid/")) {
+            return getTranslucentRenderType(itemRender);
+        }
+        return getCutoutRenderType(itemRender);
+    }
+
+    private static RenderType getCutoutRenderType(boolean itemRender) {
+        return itemRender ? RenderType.entityCutoutNoCull(InventoryMenu.BLOCK_ATLAS) : Sheets.cutoutBlockSheet();
+    }
+
+    private static RenderType getTranslucentRenderType(boolean itemRender) {
+        return itemRender ? RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS) : RenderTypeHelper.getEntityRenderType(RenderType.translucent(), false);
+    }
+
+    private static int getAttachmentModelIndex(ConnectionBase connection) {
+        return connection.isActive() ? 1 : 2;
+    }
+
+    private static int argbToRgba(int color) {
+        int a = color >>> 24;
+        int r = color >> 16 & 0xFF;
+        int g = color >> 8 & 0xFF;
+        int b = color & 0xFF;
+        return rgba(r, g, b, a);
+    }
+
+    private static int rgba(int r, int g, int b, int a) {
+        return (r & 0xFF) << 24 | (g & 0xFF) << 16 | (b & 0xFF) << 8 | a & 0xFF;
+    }
+
+    private enum FrameType {
+        NONE,
+        SIDE,
+        FRAME,
+        LARGE,
+        TRANSPORT
+    }
+
+    private record DuctTextures(String base, String connection, String fluid, int fluidAlpha, boolean opaque,
+                                FrameType frameType, String frame, String frameBand, String frameFluid, int frameFluidAlpha) {
+    }
+}

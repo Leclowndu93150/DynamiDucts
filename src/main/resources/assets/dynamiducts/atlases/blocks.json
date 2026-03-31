@@ -1,0 +1,39 @@
+{
+  "sources": [
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/servo",
+      "prefix": "dynamiducts:block/duct/attachment/servo/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/filter",
+      "prefix": "dynamiducts:block/duct/attachment/filter/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/retriever",
+      "prefix": "dynamiducts:block/duct/attachment/retriever/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/attachment/cover",
+      "prefix": "dynamiducts:block/duct/attachment/cover/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/base",
+      "prefix": "dynamiducts:block/duct/base/"
+    },
+    {
+      "type": "directory",
+      "source": "block/duct/connection",
+      "prefix": "dynamiducts:block/duct/connection/"
+    },
+    {
+      "type": "directory",
+      "source": "block/fluid",
+      "prefix": "dynamiducts:block/fluid/"
+    }
+  ]
+}
