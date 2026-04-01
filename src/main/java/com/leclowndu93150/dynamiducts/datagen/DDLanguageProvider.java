@@ -200,5 +200,11 @@ public class DDLanguageProvider extends LanguageProvider {
         add("gui.dynamiducts.transport.noDestinations", "No destinations available.");
         add("gui.dynamiducts.transport.unnamed", "Unnamed");
         add("entity.dynamiducts.transport", "Transport");
+
+        add("info.dynamiducts.jade.active", "Active");
+        add("info.dynamiducts.jade.inactive", "Inactive");
+        add("info.dynamiducts.jade.status", "Status");
+        add("info.dynamiducts.jade.channel", "Channel");
+        add("info.dynamiducts.jade.mode", "Mode");
     }
 }

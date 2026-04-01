@@ -87,6 +87,7 @@ public class ServoItem extends ConnectionBase {
 
     private Route findRouteForItem(ItemStack stack, List<Route> routes, ItemGrid grid) {
         for (Route route : routes) {
+            if (route.destination.equals(parent.getBlockPos()) && route.insertionSide == side) continue;
             for (ItemDuctUnit node : grid.getNodeSet()) {
                 if (!node.getPos().equals(route.destination)) continue;
                 if (!grid.acceptsDestinationItem(node, route.insertionSide, stack)) continue;

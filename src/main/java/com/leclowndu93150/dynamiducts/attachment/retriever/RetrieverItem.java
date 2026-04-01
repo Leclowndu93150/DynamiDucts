@@ -55,6 +55,7 @@ public class RetrieverItem extends ConnectionBase {
         List<Route> routes = grid.getSortedRoutes(localUnit, filter.getRouteType());
 
         for (Route route : routes) {
+            if (route.destination.equals(parent.getBlockPos()) && route.insertionSide == side) continue;
             ItemDuctUnit remoteNode = findNode(route.destination, grid);
             if (remoteNode == null) continue;
 
