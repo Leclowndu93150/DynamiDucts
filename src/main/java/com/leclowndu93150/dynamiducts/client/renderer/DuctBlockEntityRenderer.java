@@ -38,7 +38,6 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.client.RenderTypeHelper;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -657,7 +656,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     }
 
     private static RenderType getTranslucentRenderType(boolean itemRender) {
-        return itemRender ? RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS) : RenderTypeHelper.getEntityRenderType(RenderType.translucent(), false);
+        return itemRender ? RenderType.entityTranslucent(InventoryMenu.BLOCK_ATLAS) : Sheets.translucentCullBlockSheet();
     }
 
     private static int getAttachmentModelIndex(ConnectionBase connection) {

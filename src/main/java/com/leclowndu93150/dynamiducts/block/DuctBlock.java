@@ -235,6 +235,10 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
         return false;
     }
 
+    public boolean isCraftingOnly() {
+        return false;
+    }
+
     protected boolean canConnectToExternal(LevelAccessor level, BlockPos pos, Direction direction, BlockPos neighborPos) {
         return false;
     }

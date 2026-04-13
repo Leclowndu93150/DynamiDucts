@@ -30,6 +30,11 @@ public class TransportDuctBlock extends DuctBlock {
     }
 
     @Override
+    public boolean isCraftingOnly() {
+        return tier == TransportDuctBlockEntity.Tier.FRAME;
+    }
+
+    @Override
     protected MapCodec<? extends DuctBlock> codec() {
         return CODEC;
     }

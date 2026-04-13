@@ -16,7 +16,6 @@ public class DDCreativeTab {
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MAIN_TAB = CREATIVE_TABS.register("main",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.dynamiducts"))
-                    .withTabsBefore(CreativeModeTabs.COMBAT)
                     .icon(() -> DDItems.ENERGY_DUCT_BASIC.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         DDItems.ITEMS.getEntries().forEach(item -> output.accept(item.get()));

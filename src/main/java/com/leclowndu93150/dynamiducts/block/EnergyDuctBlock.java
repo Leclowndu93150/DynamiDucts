@@ -39,6 +39,11 @@ public class EnergyDuctBlock extends DuctBlock {
     }
 
     @Override
+    public boolean isCraftingOnly() {
+        return tier.isCraftingItem();
+    }
+
+    @Override
     protected VoxelShape[] getShapeCache() {
         return (tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR || tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR_EMPTY)
                 ? SHAPE_LARGE : SHAPE_SMALL;
