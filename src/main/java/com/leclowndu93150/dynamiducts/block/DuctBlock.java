@@ -89,7 +89,7 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
         return cache;
     }
 
-    protected VoxelShape[] getShapeCache() {
+    public VoxelShape[] getShapeCache() {
         return SHAPE_SMALL;
     }
 

@@ -49,7 +49,7 @@ public class TransportDuctBlock extends DuctBlock {
     }
 
     @Override
-    protected VoxelShape[] getShapeCache() {
+    public VoxelShape[] getShapeCache() {
         return SHAPE_TRANSPORT;
     }
 

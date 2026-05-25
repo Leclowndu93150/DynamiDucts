@@ -44,7 +44,7 @@ public class EnergyDuctBlock extends DuctBlock {
     }
 
     @Override
-    protected VoxelShape[] getShapeCache() {
+    public VoxelShape[] getShapeCache() {
         return (tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR || tier == EnergyDuctBlockEntity.Tier.SUPERCONDUCTOR_EMPTY)
                 ? SHAPE_LARGE : SHAPE_SMALL;
     }

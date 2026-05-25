@@ -42,7 +42,7 @@ public class FluidDuctBlock extends DuctBlock {
     }
 
     @Override
-    protected VoxelShape[] getShapeCache() {
+    public VoxelShape[] getShapeCache() {
         return tier == FluidDuctBlockEntity.Tier.SUPER ? SHAPE_LARGE : SHAPE_SMALL;
     }
 

@@ -16,15 +16,22 @@ import org.jetbrains.annotations.Nullable;
 public final class DuctHitHelper {
 
     private static final double OUTLINE_EPSILON = 1.0 / 1024.0;
-    private static final AABB CENTER = new AABB(0.3, 0.3, 0.3, 0.7, 0.7, 0.7);
-    private static final AABB[] COLLARS = new AABB[6];
-    private static final AABB[] CABLES = new AABB[6];
-    private static final AABB[] COVERS = new AABB[6];
+    private static final AABB CENTER_SMALL    = new AABB(0.3, 0.3, 0.3, 0.7, 0.7, 0.7);
+    private static final AABB CENTER_LARGE    = new AABB(0.125, 0.125, 0.125, 0.875, 0.875, 0.875);
+    private static final AABB[] COLLARS       = new AABB[6];
+    private static final AABB[] CABLES        = new AABB[6];
+    private static final AABB[] COLLARS_LARGE = new AABB[6];
+    private static final AABB[] CABLES_LARGE  = new AABB[6];
+    private static final AABB[] COVERS        = new AABB[6];
     private static final VoxelShape[] COVER_SHAPES = new VoxelShape[6];
 
     static {
+        // SMALL: collar depth 0.25, inner 0.2-0.8 (slightly looser than geometry for usability)
         genBoxes(COLLARS, 0.25, 0.2, 0.8);
-        genBoxes(CABLES, 0.3, 0.3, 0.7);
+        genBoxes(CABLES,  0.3,  0.3, 0.7);
+        // LARGE (superlaminar): arm cross-section 2-14px (0.125-0.875), collar depth 0.25
+        genBoxes(COLLARS_LARGE, 0.25,   0.125, 0.875);
+        genBoxes(CABLES_LARGE,  0.125,  0.125, 0.875);
         genCoverBoxes(COVERS, 0.0625);
         for (Direction dir : Direction.values()) {
             COVER_SHAPES[dir.ordinal()] = Shapes.create(COVERS[dir.ordinal()]);
@@ -34,6 +41,10 @@ public final class DuctHitHelper {
     private DuctHitHelper() {
     }
 
+    private static boolean isLarge(BlockState state) {
+        return state.getBlock() instanceof DuctBlock duct && duct.getShapeCache() == DuctBlock.SHAPE_LARGE;
+    }
+
     public static DuctHit resolve(BlockState state, BlockPos pos, BlockHitResult hitResult) {
         return resolve(state, null, pos, hitResult);
     }
@@ -41,9 +52,12 @@ public final class DuctHitHelper {
     public static DuctHit resolve(BlockState state, @Nullable DuctBlockEntity ductBE, BlockPos pos, BlockHitResult hitResult) {
         Vec3 hit = hitResult.getLocation().subtract(pos.getX(), pos.getY(), pos.getZ());
         Direction fallbackSide = hitResult.getDirection();
+        boolean large = isLarge(state);
+        AABB[] collars = large ? COLLARS_LARGE : COLLARS;
+        AABB[] cables  = large ? CABLES_LARGE  : CABLES;
 
         for (Direction dir : Direction.values()) {
-            if (hasInteractiveAttachment(ductBE, dir) && attachmentBox(dir).inflate(0.01).contains(hit)) {
+            if (hasInteractiveAttachment(ductBE, dir) && attachmentBox(dir, collars, cables).inflate(0.01).contains(hit)) {
                 return new DuctHit(HitPart.COLLAR, dir);
             }
         }
@@ -55,18 +69,19 @@ public final class DuctHitHelper {
         }
 
         for (Direction dir : Direction.values()) {
-            if (state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir)) && CABLES[dir.ordinal()].contains(hit)) {
+            if (state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir)) && cables[dir.ordinal()].contains(hit)) {
                 return new DuctHit(HitPart.CABLE, dir);
             }
         }
 
         for (Direction dir : Direction.values()) {
-            if (COLLARS[dir.ordinal()].contains(hit)) {
+            if (collars[dir.ordinal()].contains(hit)) {
                 return new DuctHit(HitPart.COLLAR, dir);
             }
         }
 
-        if (CENTER.contains(hit)) {
+        AABB center = large ? CENTER_LARGE : CENTER_SMALL;
+        if (center.contains(hit)) {
             if (hasInteractiveAttachment(ductBE, fallbackSide)) {
                 return new DuctHit(HitPart.COLLAR, fallbackSide);
             }
@@ -77,15 +92,21 @@ public final class DuctHitHelper {
     }
 
     public static AABB outlineBox(DuctHit hit) {
-        return outlineBox(hit, null);
+        return outlineBox(hit, null, false);
     }
 
     public static AABB outlineBox(DuctHit hit, @Nullable DuctBlockEntity ductBE) {
+        return outlineBox(hit, ductBE, false);
+    }
+
+    public static AABB outlineBox(DuctHit hit, @Nullable DuctBlockEntity ductBE, boolean large) {
+        AABB[] collars = large ? COLLARS_LARGE : COLLARS;
+        AABB[] cables  = large ? CABLES_LARGE  : CABLES;
         return switch (hit.part()) {
-            case COLLAR -> hasInteractiveAttachment(ductBE, hit.side()) ? attachmentBox(hit.side()) : COLLARS[hit.side().ordinal()];
-            case CABLE -> CABLES[hit.side().ordinal()];
+            case COLLAR -> hasInteractiveAttachment(ductBE, hit.side()) ? attachmentBox(hit.side(), collars, cables) : collars[hit.side().ordinal()];
+            case CABLE -> cables[hit.side().ordinal()];
             case COVER -> outlineCoverBox(hit.side());
-            case CENTER -> CENTER;
+            case CENTER -> large ? CENTER_LARGE : CENTER_SMALL;
         };
     }
 
@@ -139,9 +160,9 @@ public final class DuctHitHelper {
         return ductBE != null && ductBE.getAttachment(side) instanceof Cover;
     }
 
-    private static AABB attachmentBox(Direction side) {
-        AABB collar = COLLARS[side.ordinal()];
-        AABB cable = CABLES[side.ordinal()];
+    private static AABB attachmentBox(Direction side, AABB[] collars, AABB[] cables) {
+        AABB collar = collars[side.ordinal()];
+        AABB cable = cables[side.ordinal()];
         return new AABB(
                 Math.min(collar.minX, cable.minX),
                 Math.min(collar.minY, cable.minY),
