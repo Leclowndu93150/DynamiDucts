@@ -11,6 +11,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+
 public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
     protected final FluidGridTank tank;
@@ -76,47 +77,53 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     @Override
     public void tickGrid() {
         super.tickGrid();
-        tickTemperature();
-        if (nodeSet.isEmpty() || tank.isEmpty()) {
-            syncVisualIfChanged();
-            return;
-        }
+        beginTick();
+        try {
+            tickTemperature();
+            if (nodeSet.isEmpty() || tank.isEmpty()) {
+                syncVisualIfChanged();
+                return;
+            }
 
-        int available = getEffectiveThroughput();
-        if (available <= 0) {
-            syncVisualIfChanged();
-            return;
-        }
+            int available = getEffectiveThroughput();
+            if (available <= 0) {
+                syncVisualIfChanged();
+                return;
+            }
 
-        for (FluidDuctUnit node : nodeSet) {
-            for (Direction dir : Direction.values()) {
-                IFluidHandler target = node.getTileCache(dir);
-                if (target == null) continue;
-                if (hasServoOnSide(node, dir)) continue;
+            for (FluidDuctUnit node : getNodeSnapshot()) {
+                if (node.getGrid() != this) continue;
+                for (Direction dir : Direction.values()) {
+                    IFluidHandler target = node.getTileCache(dir);
+                    if (target == null) continue;
+                    if (hasServoOnSide(node, dir)) continue;
 
-                FluidStack toSend = tank.drain(available, IFluidHandler.FluidAction.SIMULATE);
-                if (toSend.isEmpty()) break;
+                    FluidStack toSend = tank.drain(available, IFluidHandler.FluidAction.SIMULATE);
+                    if (toSend.isEmpty()) break;
 
-                int filled = target.fill(toSend, IFluidHandler.FluidAction.EXECUTE);
-                if (filled > 0) {
-                    tank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
-                    available -= filled;
-                    if (available <= 0) {
-                        syncVisualIfChanged();
-                        return;
+                    int filled = target.fill(toSend, IFluidHandler.FluidAction.EXECUTE);
+                    if (filled > 0) {
+                        tank.drain(filled, IFluidHandler.FluidAction.EXECUTE);
+                        available -= filled;
+                        if (available <= 0) {
+                            syncVisualIfChanged();
+                            return;
+                        }
                     }
                 }
             }
+            syncVisualIfChanged();
+        } finally {
+            endTick();
         }
-        syncVisualIfChanged();
     }
 
     private void tickTemperature() {
         List<FluidDuctUnitTemperate> tempUnits = new ArrayList<>();
-        for (FluidDuctUnit unit : nodeSet) {
+        for (FluidDuctUnit unit : getNodeSnapshot()) {
             if (unit instanceof FluidDuctUnitTemperate t) tempUnits.add(t);
         }
-        for (FluidDuctUnit unit : idleSet) {
+        for (FluidDuctUnit unit : getIdleSnapshot()) {
             if (unit instanceof FluidDuctUnitTemperate t) tempUnits.add(t);
         }
         for (FluidDuctUnitTemperate temperate : tempUnits) {
@@ -171,8 +178,8 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
                 ? FluidStack.EMPTY
                 : current.copyWithAmount(renderLevel);
 
-        for (FluidDuctUnit unit : nodeSet) syncVisualToClient(unit, renderFluid);
-        for (FluidDuctUnit unit : idleSet) syncVisualToClient(unit, renderFluid);
+        for (FluidDuctUnit unit : getNodeSnapshot()) syncVisualToClient(unit, renderFluid);
+        for (FluidDuctUnit unit : getIdleSnapshot()) syncVisualToClient(unit, renderFluid);
     }
 
     private void syncVisualToClient(FluidDuctUnit unit, FluidStack fluid) {

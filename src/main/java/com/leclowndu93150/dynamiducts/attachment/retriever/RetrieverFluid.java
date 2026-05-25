@@ -38,7 +38,7 @@ public class RetrieverFluid extends ConnectionBase {
         if (!(unit instanceof FluidDuctUnit fluidUnit)) return;
         if (fluidUnit.getGrid() == null) return;
 
-        for (FluidDuctUnit node : fluidUnit.getGrid().getNodeSet()) {
+        for (FluidDuctUnit node : fluidUnit.getGrid().getNodeSnapshot()) {
             for (Direction dir : Direction.values()) {
                 IFluidHandler source = node.getTileCache(dir);
                 if (source == null) continue;

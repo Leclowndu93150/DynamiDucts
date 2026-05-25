@@ -49,8 +49,14 @@ public class EnergyGrid extends NetworkGrid<EnergyDuctUnit> {
         currentEnergyShare = storage.getEnergyStored() / nodeSet.size();
         extraEnergy = storage.getEnergyStored() % nodeSet.size();
 
-        for (EnergyDuctUnit node : nodeSet) {
-            if (!node.tickPass(0) || node.getGrid() == null) break;
+        beginTick();
+        try {
+            for (EnergyDuctUnit node : getNodeSnapshot()) {
+                if (node.getGrid() != this) continue;
+                if (!node.tickPass(0) || node.getGrid() == null) break;
+            }
+        } finally {
+            endTick();
         }
     }
 

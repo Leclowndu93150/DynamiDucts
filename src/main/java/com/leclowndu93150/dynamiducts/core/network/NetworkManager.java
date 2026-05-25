@@ -1,10 +1,10 @@
 package com.leclowndu93150.dynamiducts.core.network;
 
 import com.leclowndu93150.dynamiducts.core.duct.DuctUnit;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -14,10 +14,10 @@ public class NetworkManager {
     private static final WeakHashMap<ServerLevel, NetworkManager> MANAGERS = new WeakHashMap<>();
 
     private final ServerLevel level;
-    private final Set<NetworkGrid<?>> activeGrids = new LinkedHashSet<>();
-    private final Set<NetworkGrid<?>> gridsToAdd = new LinkedHashSet<>();
-    private final Set<NetworkGrid<?>> gridsToRemove = new LinkedHashSet<>();
-    private final Set<DuctUnit<?, ?, ?>> pendingFormation = new LinkedHashSet<>();
+    private final Set<NetworkGrid<?>> activeGrids = new ReferenceOpenHashSet<>();
+    private final Set<NetworkGrid<?>> gridsToAdd = new ReferenceOpenHashSet<>();
+    private final Set<NetworkGrid<?>> gridsToRemove = new ReferenceOpenHashSet<>();
+    private final Set<DuctUnit<?, ?, ?>> pendingFormation = new ReferenceOpenHashSet<>();
     private final List<NetworkGrid<?>> toRecreate = new ArrayList<>();
 
     private NetworkManager(ServerLevel level) {
@@ -31,7 +31,9 @@ public class NetworkManager {
     public static void remove(ServerLevel level) {
         NetworkManager manager = MANAGERS.remove(level);
         if (manager != null) {
-            manager.activeGrids.forEach(NetworkGrid::destroy);
+            for (NetworkGrid<?> grid : manager.activeGrids.toArray(new NetworkGrid[0])) {
+                grid.destroy();
+            }
             manager.activeGrids.clear();
         }
     }
@@ -59,7 +61,7 @@ public class NetworkManager {
     public void tickEnd() {
         processFormation();
 
-        for (NetworkGrid<?> grid : activeGrids) {
+        for (NetworkGrid<?> grid : activeGrids.toArray(new NetworkGrid[0])) {
             if (grid.needsRecreation()) {
                 toRecreate.add(grid);
             } else if (grid.isValid()) {
@@ -102,7 +104,7 @@ public class NetworkManager {
         activeGrids.remove(typedGrid);
         typedGrid.clearRecreationFlag();
 
-        Set<T> allBlocks = new LinkedHashSet<>();
+        Set<T> allBlocks = new ReferenceOpenHashSet<>();
         allBlocks.addAll(typedGrid.getNodeSet());
         allBlocks.addAll(typedGrid.getIdleSet());
 

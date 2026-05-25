@@ -1,16 +1,16 @@
 package com.leclowndu93150.dynamiducts.duct.transport;
 
 import com.leclowndu93150.dynamiducts.core.network.NetworkGrid;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 public class TransportGrid extends NetworkGrid<TransportDuctUnit> {
 
     private final TransportRouteCache routeCache = new TransportRouteCache();
-    private final Set<TransportDuctUnit> endpoints = new LinkedHashSet<>();
+    private final Set<TransportDuctUnit> endpoints = new ReferenceOpenHashSet<>();
 
     public TransportGrid(ServerLevel level) {
         super(level);
@@ -43,16 +43,16 @@ public class TransportGrid extends NetworkGrid<TransportDuctUnit> {
 
     private void rebuildEndpoints() {
         endpoints.clear();
-        for (TransportDuctUnit unit : nodeSet) {
+        for (TransportDuctUnit unit : getNodeSnapshot()) {
             if (unit.isEndpoint()) endpoints.add(unit);
         }
-        for (TransportDuctUnit unit : idleSet) {
+        for (TransportDuctUnit unit : getIdleSnapshot()) {
             if (unit.isEndpoint()) endpoints.add(unit);
         }
     }
 
     public List<TransportRoute> getRoutesFrom(TransportDuctUnit origin) {
-        Set<TransportDuctUnit> allUnits = new LinkedHashSet<>();
+        Set<TransportDuctUnit> allUnits = new ReferenceOpenHashSet<>();
         allUnits.addAll(nodeSet);
         allUnits.addAll(idleSet);
         return routeCache.getRoutes(origin, allUnits);

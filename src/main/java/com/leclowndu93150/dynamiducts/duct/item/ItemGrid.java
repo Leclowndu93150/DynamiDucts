@@ -56,7 +56,7 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
 
     private void rebuildNodesByPos() {
         nodesByPos.clear();
-        for (ItemDuctUnit node : nodeSet) {
+        for (ItemDuctUnit node : getNodeSnapshot()) {
             nodesByPos.put(node.getPos(), node);
         }
     }
@@ -64,17 +64,25 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
     @Override
     public void tickGrid() {
         super.tickGrid();
-        tickAllDuctItems();
+        beginTick();
+        try {
+            tickAllDuctItems();
+        } finally {
+            endTick();
+        }
     }
 
     private void tickAllDuctItems() {
         dirtyUnits.clear();
 
-        for (ItemDuctUnit unit : nodeSet) tickUnit(unit);
-        for (ItemDuctUnit unit : idleSet) tickUnit(unit);
+        List<ItemDuctUnit> nodeSnap = getNodeSnapshot();
+        List<ItemDuctUnit> idleSnap = getIdleSnapshot();
 
-        for (ItemDuctUnit unit : nodeSet) unit.flushItemsToAdd();
-        for (ItemDuctUnit unit : idleSet) unit.flushItemsToAdd();
+        for (ItemDuctUnit unit : nodeSnap) tickUnit(unit);
+        for (ItemDuctUnit unit : idleSnap) tickUnit(unit);
+
+        for (ItemDuctUnit unit : nodeSnap) unit.flushItemsToAdd();
+        for (ItemDuctUnit unit : idleSnap) unit.flushItemsToAdd();
 
         for (ItemDuctUnit unit : dirtyUnits) {
             syncTravelersAt(unit);

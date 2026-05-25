@@ -7,7 +7,6 @@ import net.minecraft.server.level.ServerLevel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class StructuralGrid extends NetworkGrid<StructuralDuctUnit> {
 
@@ -22,20 +21,25 @@ public class StructuralGrid extends NetworkGrid<StructuralDuctUnit> {
     @Override
     public void tickGrid() {
         super.tickGrid();
-        updateRelays();
-        updateSignals();
-        broadcastSignals();
+        beginTick();
+        try {
+            updateRelays();
+            updateSignals();
+            broadcastSignals();
+        } finally {
+            endTick();
+        }
     }
 
     private void updateRelays() {
         inputRelays.clear();
         outputRelays.clear();
 
-        collectRelaysFrom(nodeSet);
-        collectRelaysFrom(idleSet);
+        collectRelaysFrom(getNodeSnapshot());
+        collectRelaysFrom(getIdleSnapshot());
     }
 
-    private void collectRelaysFrom(Set<StructuralDuctUnit> units) {
+    private void collectRelaysFrom(List<StructuralDuctUnit> units) {
         for (StructuralDuctUnit unit : units) {
             Attachment[] attachments = unit.getParent().getAttachments();
             if (attachments == null) continue;

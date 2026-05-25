@@ -62,7 +62,7 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
     // Normal ducts: W=3/16, center 5-11px, arms 5-11px
     protected static final VoxelShape[] SHAPE_SMALL = buildShapeCache(5, 11, 5, 11);
     // Bronze frame ducts (cryo, superconductor): frame radius 0.375 = 6/16, center 5-11px, arms 2-14px
-    protected static final VoxelShape[] SHAPE_LARGE = buildShapeCache(2, 14, 5, 11);
+    public static final VoxelShape[] SHAPE_LARGE = buildShapeCache(2, 14, 5, 11);
     // Transport ducts (viaducts): radius ~0.5, center 1-15px, arms 1-15px
     protected static final VoxelShape[] SHAPE_TRANSPORT = buildShapeCache(1, 15, 1, 15);
 

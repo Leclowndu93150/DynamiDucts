@@ -143,7 +143,7 @@ public class RetrieverItem extends ConnectionBase {
         if (!(localUnit.getGrid() instanceof ItemGrid grid)) return 0;
 
         int count = 0;
-        for (ItemDuctUnit ductUnit : grid.getNodeSet()) {
+        for (ItemDuctUnit ductUnit : grid.getNodeSnapshot()) {
             for (var item : ductUnit.getMyItems()) {
                 if (item.route.destination.equals(parent.getBlockPos())
                         && item.route.insertionSide == side
@@ -159,7 +159,7 @@ public class RetrieverItem extends ConnectionBase {
                 }
             }
         }
-        for (ItemDuctUnit ductUnit : grid.getIdleSet()) {
+        for (ItemDuctUnit ductUnit : grid.getIdleSnapshot()) {
             for (var item : ductUnit.getMyItems()) {
                 if (item.route.destination.equals(parent.getBlockPos())
                         && item.route.insertionSide == side
@@ -179,7 +179,7 @@ public class RetrieverItem extends ConnectionBase {
     }
 
     private ItemDuctUnit findNode(net.minecraft.core.BlockPos pos, ItemGrid grid) {
-        for (ItemDuctUnit node : grid.getNodeSet()) {
+        for (ItemDuctUnit node : grid.getNodeSnapshot()) {
             if (node.getPos().equals(pos)) return node;
         }
         return null;

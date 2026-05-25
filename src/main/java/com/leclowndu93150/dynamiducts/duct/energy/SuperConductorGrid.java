@@ -5,6 +5,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.Direction;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
+import java.util.List;
+
 public class SuperConductorGrid extends EnergyGrid {
 
     public SuperConductorGrid(ServerLevel level) {
@@ -15,26 +17,34 @@ public class SuperConductorGrid extends EnergyGrid {
     public void tickGrid() {
         if (nodeSet.isEmpty()) return;
 
-        for (EnergyDuctUnit node : nodeSet) {
-            for (Direction dir : Direction.values()) {
-                IEnergyStorage source = node.getTileCache(dir);
-                if (source == null || !source.canExtract()) continue;
+        beginTick();
+        try {
+            List<EnergyDuctUnit> snapshot = getNodeSnapshot();
+            for (EnergyDuctUnit node : snapshot) {
+                if (node.getGrid() != this) continue;
+                for (Direction dir : Direction.values()) {
+                    IEnergyStorage source = node.getTileCache(dir);
+                    if (source == null || !source.canExtract()) continue;
 
-                int available = source.extractEnergy(Integer.MAX_VALUE, true);
-                if (available <= 0) continue;
+                    int available = source.extractEnergy(Integer.MAX_VALUE, true);
+                    if (available <= 0) continue;
 
-                int distributed = distributeToOthers(node, available);
-                if (distributed > 0) {
-                    source.extractEnergy(distributed, false);
+                    int distributed = distributeToOthers(node, available, snapshot);
+                    if (distributed > 0) {
+                        source.extractEnergy(distributed, false);
+                    }
                 }
             }
+        } finally {
+            endTick();
         }
     }
 
-    private int distributeToOthers(EnergyDuctUnit sourceNode, int available) {
+    private int distributeToOthers(EnergyDuctUnit sourceNode, int available, List<EnergyDuctUnit> snapshot) {
         int totalSent = 0;
-        for (EnergyDuctUnit targetNode : nodeSet) {
+        for (EnergyDuctUnit targetNode : snapshot) {
             if (targetNode == sourceNode) continue;
+            if (targetNode.getGrid() != this) continue;
             for (Direction dir : Direction.values()) {
                 IEnergyStorage target = targetNode.getTileCache(dir);
                 if (target == null || !target.canReceive()) continue;

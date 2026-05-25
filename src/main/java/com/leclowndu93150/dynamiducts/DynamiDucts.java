@@ -1,5 +1,6 @@
 package com.leclowndu93150.dynamiducts;
 
+import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.client.renderer.DuctBlockEntityRenderer;
 import com.leclowndu93150.dynamiducts.client.renderer.DuctBlockItemRenderer;
 import com.leclowndu93150.dynamiducts.client.renderer.ItemDuctRenderer;
@@ -223,7 +224,7 @@ public class DynamiDucts {
             }
 
             var blockEntity = Minecraft.getInstance().level.getBlockEntity(event.getTarget().getBlockPos());
-            var ductBE = blockEntity instanceof com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity duct ? duct : null;
+            var ductBE = blockEntity instanceof DuctBlockEntity duct ? duct : null;
             var hit = DuctHitHelper.resolve(state, ductBE, event.getTarget().getBlockPos(), event.getTarget());
             var box = DuctHitHelper.outlineBox(hit, ductBE, state.getBlock() instanceof DuctBlock db && db.getShapeCache() == DuctBlock.SHAPE_LARGE);
             var cameraPos = event.getCamera().getPosition();
