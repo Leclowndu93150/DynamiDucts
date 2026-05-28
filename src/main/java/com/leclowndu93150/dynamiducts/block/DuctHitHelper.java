@@ -29,9 +29,9 @@ public final class DuctHitHelper {
         // SMALL: collar depth 0.25, inner 0.2-0.8 (slightly looser than geometry for usability)
         genBoxes(COLLARS, 0.25, 0.2, 0.8);
         genBoxes(CABLES,  0.3,  0.3, 0.7);
-        // LARGE (superlaminar): arm cross-section 2-14px (0.125-0.875), collar depth 0.25
+        // LARGE (superlaminar): arm cross-section 2-14px (0.125-0.875), arm depth matches visual (5/16 = 0.3125)
         genBoxes(COLLARS_LARGE, 0.25,   0.125, 0.875);
-        genBoxes(CABLES_LARGE,  0.125,  0.125, 0.875);
+        genBoxes(CABLES_LARGE,  0.3125, 0.125, 0.875);
         genCoverBoxes(COVERS, 0.0625);
         for (Direction dir : Direction.values()) {
             COVER_SHAPES[dir.ordinal()] = Shapes.create(COVERS[dir.ordinal()]);
@@ -75,7 +75,7 @@ public final class DuctHitHelper {
         }
 
         for (Direction dir : Direction.values()) {
-            if (collars[dir.ordinal()].contains(hit)) {
+            if (state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir)) && collars[dir.ordinal()].contains(hit)) {
                 return new DuctHit(HitPart.COLLAR, dir);
             }
         }
