@@ -46,6 +46,11 @@ public class ItemDuctBlock extends DuctBlock {
     }
 
     @Override
+    public boolean connectsSeamlesslyTo(DuctBlock other) {
+        return other instanceof ItemDuctBlock;
+    }
+
+    @Override
     protected boolean canConnectToExternal(LevelAccessor level, BlockPos pos, Direction direction, BlockPos neighborPos) {
         if (level instanceof Level realLevel) {
             if (realLevel.getCapability(Capabilities.ItemHandler.BLOCK, neighborPos, direction.getOpposite()) != null) return true;

@@ -237,6 +237,10 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
         return false;
     }
 
+    public boolean connectsSeamlesslyTo(DuctBlock other) {
+        return this == other;
+    }
+
     public boolean isCraftingOnly() {
         return false;
     }

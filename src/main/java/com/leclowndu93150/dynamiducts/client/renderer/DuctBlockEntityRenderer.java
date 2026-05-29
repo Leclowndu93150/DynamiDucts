@@ -618,12 +618,11 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         }
 
         BlockState neighborState = be.getLevel().getBlockState(be.getBlockPos().relative(dir));
-        if (!(neighborState.getBlock() instanceof DuctBlock)) {
+        if (!(neighborState.getBlock() instanceof DuctBlock neighborDuct)) {
             return true;
         }
 
-        // 1.12 renders connection hands/bands when the join is not a plain same-duct seam.
-        return neighborState.getBlock() != state.getBlock();
+        return !(state.getBlock() instanceof DuctBlock self) || !self.connectsSeamlesslyTo(neighborDuct);
     }
 
     private TextureAtlasSprite getSprite(String path) {

@@ -47,6 +47,15 @@ public class FluidDuctBlock extends DuctBlock {
     }
 
     @Override
+    public boolean connectsSeamlesslyTo(DuctBlock other) {
+        if (!(other instanceof FluidDuctBlock otherFluid)) return false;
+        if (tier == FluidDuctBlockEntity.Tier.SUPER || otherFluid.tier == FluidDuctBlockEntity.Tier.SUPER) {
+            return tier == otherFluid.tier;
+        }
+        return true;
+    }
+
+    @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return tier.createBlockEntity(pos, state, opaque);
     }
