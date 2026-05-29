@@ -33,7 +33,7 @@ public class FluidDuctBlockEntity extends DuctBlockEntity {
         switch (tier) {
             case SUPER -> {
                 capacity *= 4;
-                throughput = Integer.MAX_VALUE;
+                throughput *= 16;
             }
             case HARDENED -> {
                 capacity *= 2;

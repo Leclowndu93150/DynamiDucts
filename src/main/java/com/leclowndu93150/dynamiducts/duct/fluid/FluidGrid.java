@@ -63,8 +63,8 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     @Override
     public void balanceGrid() {
         int totalDucts = Math.max(1, nodeSet.size() + idleSet.size());
-        tank.setCapacity((int) Math.min(Integer.MAX_VALUE, (long) totalDucts * capacityPerDuct));
-        tank.setThroughput((int) Math.min(Integer.MAX_VALUE, (long) totalDucts * throughputPerDuct));
+        tank.setCapacity(totalDucts * capacityPerDuct);
+        tank.setThroughput(totalDucts * throughputPerDuct);
     }
 
     @Override
@@ -140,11 +140,9 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
         int amount = tank.getFluid().getAmount();
         int throughput = tank.getThroughput();
 
-        long threeQuarterCap = (long) capacity * 3 / 4;
-        long quarterCap = (long) capacity / 4;
-        if (amount >= threeQuarterCap) return throughput;
-        if (amount <= quarterCap) return throughput / 2;
-        return (int) ((long) throughput * 3 / 4);
+        if (amount >= capacity * 3 / 4) return throughput;
+        if (amount <= capacity / 4) return throughput / 2;
+        return throughput * 3 / 4;
     }
 
     public FluidGridTank getTank() {

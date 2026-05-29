@@ -226,7 +226,7 @@ public class DynamiDucts {
             var blockEntity = Minecraft.getInstance().level.getBlockEntity(event.getTarget().getBlockPos());
             var ductBE = blockEntity instanceof DuctBlockEntity duct ? duct : null;
             var hit = DuctHitHelper.resolve(state, ductBE, event.getTarget().getBlockPos(), event.getTarget());
-            var box = DuctHitHelper.outlineBox(hit, ductBE, state.getBlock() instanceof DuctBlock db && db.getShapeCache() == DuctBlock.SHAPE_LARGE);
+            var box = DuctHitHelper.outlineBox(hit, ductBE, state);
             var cameraPos = event.getCamera().getPosition();
             var blockPos = event.getTarget().getBlockPos();
             var builder = event.getMultiBufferSource().getBuffer(RenderType.lines());
