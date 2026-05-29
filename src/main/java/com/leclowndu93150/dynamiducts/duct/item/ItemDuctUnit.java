@@ -82,6 +82,9 @@ public class ItemDuctUnit extends DuctUnit<ItemDuctUnit, ItemGrid, IItemHandler>
     public void insertItemWithRoute(ItemStack stack, Direction entrySide, Route route, int speedBoost) {
         TravelingItem item = new TravelingItem(stack, route, getPos(), entrySide, Math.max(1, speed / speedBoost));
         addTravelingItem(item);
+        if (grid != null) {
+            grid.syncTravelersAt(this);
+        }
     }
 
     public void addTravelingItem(TravelingItem item) {

@@ -226,7 +226,7 @@ public class ItemGrid extends NetworkGrid<ItemDuctUnit> {
         return false;
     }
 
-    private void syncTravelersAt(ItemDuctUnit itemUnit) {
+    public void syncTravelersAt(ItemDuctUnit itemUnit) {
         List<TravelingItemSnapshot> snapshots = new ArrayList<>();
         for (TravelingItem item : itemUnit.getMyItems()) {
             snapshots.add(TravelingItemSnapshot.fromTravelingItem(item));

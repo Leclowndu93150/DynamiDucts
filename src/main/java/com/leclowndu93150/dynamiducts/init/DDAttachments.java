@@ -1,6 +1,5 @@
 package com.leclowndu93150.dynamiducts.init;
 
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.attachment.filter.FilterFluid;
 import com.leclowndu93150.dynamiducts.attachment.filter.FilterItem;
 import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
@@ -25,7 +24,6 @@ public final class DDAttachments {
         }
         initialized = true;
 
-        AttachmentRegistry.register(Cover.ID, (parent, side, tag) -> new Cover(parent, side));
         AttachmentRegistry.register(Relay.ID, (parent, side, tag) -> new Relay(parent, side));
 
         AttachmentRegistry.register(ServoItem.ID, (parent, side, tag) -> new ServoItem(parent, side, tierFromTag(tag)));

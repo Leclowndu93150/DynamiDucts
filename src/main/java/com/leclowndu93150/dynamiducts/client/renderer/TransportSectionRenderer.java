@@ -4,21 +4,11 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.uv.IconTransformation;
 import com.leclowndu93150.dynamiducts.DynamiDucts;
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.block.DuctBlock;
-import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
 import com.leclowndu93150.dynamiducts.block.TransportDuctBlock;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.blockentity.TransportDuctBlockEntity;
-import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.util.FastColor;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -73,16 +63,11 @@ public class TransportSectionRenderer {
 
                     int connectionMask = getConnectionMask(tbe, tbe.getBlockState());
                     boolean[] externalSides = new boolean[6];
-                    CoverSnapshot[] covers = new CoverSnapshot[6];
                     for (Direction dir : Direction.values()) {
                         externalSides[dir.ordinal()] = isExternalConnection(tbe, tbe.getBlockState(), dir);
-                        Attachment att = tbe.getAttachment(dir);
-                        if (att instanceof Cover cover && com.leclowndu93150.dynamiducts.item.CoverItem.isValidCoverState(cover.getCoverState())) {
-                            covers[dir.ordinal()] = new CoverSnapshot(cover.getCoverState(), dir);
-                        }
                     }
 
-                    renderData.add(new TransportRenderData(pos, connectionMask, externalSides, tex, covers));
+                    renderData.add(new TransportRenderData(pos, connectionMask, externalSides, tex));
                 }
             }
         }
@@ -95,11 +80,6 @@ public class TransportSectionRenderer {
 
             for (TransportRenderData data : renderData) {
                 renderTransportDuct(ccrs, context, data);
-                for (CoverSnapshot cover : data.covers) {
-                    if (cover != null) {
-                        renderCover(context, data.pos, cover);
-                    }
-                }
             }
         });
     }
@@ -157,9 +137,7 @@ public class TransportSectionRenderer {
     private static int getConnectionMask(DuctBlockEntity be, BlockState state) {
         int mask = 0;
         for (Direction dir : Direction.values()) {
-            boolean connected = state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir));
-            Attachment attachment = be.getAttachment(dir);
-            if (connected || (attachment != null && !(attachment instanceof Cover))) {
+            if (state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir)) || be.getAttachment(dir) != null) {
                 mask |= (1 << dir.ordinal());
             }
         }
@@ -168,8 +146,7 @@ public class TransportSectionRenderer {
 
     private static boolean isExternalConnection(DuctBlockEntity be, BlockState state, Direction dir) {
         boolean connected = state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir));
-        Attachment attachment = be.getAttachment(dir);
-        if (!connected && (attachment == null || attachment instanceof Cover)) return false;
+        if (!connected && be.getAttachment(dir) == null) return false;
         if (be.getLevel() == null) return true;
         return !(be.getLevel().getBlockState(be.getBlockPos().relative(dir)).getBlock() instanceof DuctBlock);
     }
@@ -188,46 +165,7 @@ public class TransportSectionRenderer {
         return (r & 0xFF) << 24 | (g & 0xFF) << 16 | (b & 0xFF) << 8 | a & 0xFF;
     }
 
-    private static void renderCover(AddSectionGeometryEvent.SectionRenderingContext context, BlockPos pos, CoverSnapshot cover) {
-        BlockState coverState = cover.state;
-        Direction side = cover.side;
-
-        BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(coverState);
-        AABB bounds = DuctHitHelper.coverBox(side);
-        TextureAtlasSprite sideSprite = getSprite("block/duct/attachment/cover/cover_side");
-
-        RenderType coverType = ItemBlockRenderTypes.getRenderType(coverState, true);
-        if (coverType.getChunkLayerId() == -1) {
-            coverType = RenderType.cutout();
-        }
-        VertexConsumer consumer = context.getOrCreateChunkBuffer(coverType);
-
-        float nudge = 1.0F / 512.0F;
-        PoseStack poseStack = context.getPoseStack();
-        poseStack.pushPose();
-        poseStack.translate(
-                (pos.getX() & 15) + side.getStepX() * nudge,
-                (pos.getY() & 15) + side.getStepY() * nudge,
-                (pos.getZ() & 15) + side.getStepZ() * nudge
-        );
-        PoseStack.Pose pose = poseStack.last();
-        int light = LevelRenderer.getLightColor(context.getRegion(), pos);
-
-        for (BakedQuad quad : DuctBlockEntityRenderer.sliceCoverQuads(coverState, pos, model, side, bounds, sideSprite)) {
-            int tint = quad.isTinted()
-                    ? Minecraft.getInstance().getBlockColors().getColor(coverState, context.getRegion(), pos, quad.getTintIndex())
-                    : -1;
-            float r = tint == -1 ? 1.0F : FastColor.ARGB32.red(tint) / 255.0F;
-            float g = tint == -1 ? 1.0F : FastColor.ARGB32.green(tint) / 255.0F;
-            float b = tint == -1 ? 1.0F : FastColor.ARGB32.blue(tint) / 255.0F;
-            consumer.putBulkData(pose, quad, r, g, b, 1.0F, light, OverlayTexture.NO_OVERLAY);
-        }
-        poseStack.popPose();
-    }
-
     private record TubeTextures(String frame, String band, String fill, int fillAlpha) {}
 
-    private record CoverSnapshot(BlockState state, Direction side) {}
-
-    private record TransportRenderData(BlockPos pos, int connectionMask, boolean[] externalSides, TubeTextures tex, CoverSnapshot[] covers) {}
+    private record TransportRenderData(BlockPos pos, int connectionMask, boolean[] externalSides, TubeTextures tex) {}
 }

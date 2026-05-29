@@ -4,7 +4,6 @@ import com.leclowndu93150.dynamiducts.DynamiDucts;
 import com.leclowndu93150.dynamiducts.init.DDBlocks;
 import com.leclowndu93150.dynamiducts.init.DDItems;
 import com.leclowndu93150.dynamiducts.init.DDTags;
-import com.leclowndu93150.dynamiducts.recipe.CoverRecipe;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.recipes.RecipeCategory;
@@ -12,7 +11,6 @@ import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.RecipeProvider;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.data.recipes.ShapelessRecipeBuilder;
-import net.minecraft.data.recipes.SpecialRecipeBuilder;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 
@@ -33,9 +31,6 @@ public class DDRecipeProvider extends RecipeProvider {
         buildStructuralRecipes(output);
         buildTransportRecipes(output);
         buildAttachmentRecipes(output);
-
-        SpecialRecipeBuilder.special(CoverRecipe::new)
-                .save(output, DynamiDucts.MODID + ":cover_crafting");
     }
 
     private void buildMetalRecipes(RecipeOutput output) {

@@ -76,8 +76,6 @@ public class DDLanguageProvider extends LanguageProvider {
         addItem(DDItems.RETRIEVER_RESONANT, "Resonant Retriever");
 
         addItem(DDItems.RELAY, "Redstone Relay");
-        addItem(DDItems.COVER, "Cover");
-        add("item.dynamiducts.cover.filled", "%s Cover");
         addItem(DDItems.WRENCH, "Crescent Hammer");
 
         addItem(DDItems.LEAD_INGOT, "Lead Ingot");
@@ -107,7 +105,6 @@ public class DDLanguageProvider extends LanguageProvider {
         add("info.dynamiducts.duct.itemFast", "Items travel more rapidly.");
         add("info.dynamiducts.duct.structure", "Provides Structure.");
         add("info.dynamiducts.duct.crafting", "Crafting Item.");
-        add("info.dynamiducts.duct.cover", "Combine with a Block to create Covers.");
         add("info.dynamiducts.duct.transport", "Transfers Players. Whoosh.");
         add("info.dynamiducts.duct.transportLongRange", "Fast transport between two specific locations.");
         add("info.dynamiducts.duct.transportCrossover", "End points for Long Range Viaducts. Required.");
@@ -173,7 +170,6 @@ public class DDLanguageProvider extends LanguageProvider {
         add("info.dynamiducts.servo.slotMulti", "Extracts from multiple slots.");
         add("info.dynamiducts.servo.slotSingle", "Extracts from a single slot.");
         add("info.dynamiducts.servo.speedBoost", "Speed Boost");
-        add("info.dynamiducts.info.invalidCover", "Place in a crafting grid to convert to a Stone Cover.");
         add("info.dynamiducts.redstoneMode.0", "Ignored");
         add("info.dynamiducts.redstoneMode.1", "Active without Signal");
         add("info.dynamiducts.redstoneMode.2", "Active with Signal");

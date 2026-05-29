@@ -1,14 +1,12 @@
 package com.leclowndu93150.dynamiducts.compat.jade;
 
 import com.leclowndu93150.dynamiducts.DynamiDucts;
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
 import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
 import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
 import com.leclowndu93150.dynamiducts.init.DDItems;
-import com.leclowndu93150.dynamiducts.item.CoverItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -117,15 +115,10 @@ public enum DuctComponentProvider implements IBlockComponentProvider, IServerDat
             };
             data.putString("DDRelayMode", relayMode);
             data.putInt("DDColor", relay.getColor());
-        } else if (att instanceof Cover) {
-            data.putString("DDAttType", "Cover");
         }
     }
 
     private static ItemStack getAttachmentItem(Attachment att) {
-        if (att instanceof Cover cover) {
-            return CoverItem.createForState(cover.getCoverState(), 1);
-        }
         if (att instanceof Relay) {
             return new ItemStack(DDItems.RELAY.get());
         }

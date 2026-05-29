@@ -62,7 +62,6 @@ public class DDItemModelProvider extends ItemModelProvider {
         simpleItem(DDItems.RETRIEVER_RESONANT, "retriever_4");
 
         simpleItem(DDItems.RELAY, "relay");
-        builtinEntityItem(DDItems.COVER, modLoc("item/cover"));
         simpleItem(DDItems.WRENCH, "crescent_hammer");
 
         simpleItem(DDItems.LEAD_INGOT, "ingot_lead");

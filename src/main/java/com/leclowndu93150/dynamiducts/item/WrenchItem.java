@@ -1,6 +1,5 @@
 package com.leclowndu93150.dynamiducts.item;
 
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
 import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
@@ -43,11 +42,6 @@ public class WrenchItem extends Item {
             var hit = DuctHitHelper.resolve(ductBE.getBlockState(), ductBE, pos, hitResult);
             Direction side = hit.side();
             Attachment attachment = ductBE.getAttachment(side);
-
-            if (hit.part() == DuctHitHelper.HitPart.COVER && attachment instanceof Cover) {
-                removeSideAttachment(level, pos, ductBE, side, attachment);
-                return InteractionResult.SUCCESS;
-            }
 
             if (attachment != null && hit.part() == DuctHitHelper.HitPart.COLLAR) {
                 removeSideAttachment(level, pos, ductBE, side, attachment);
@@ -113,9 +107,6 @@ public class WrenchItem extends Item {
     }
 
     private static ItemStack getAttachmentDrop(Attachment attachment) {
-        if (attachment instanceof Cover cover) {
-            return CoverItem.createForState(cover.getCoverState(), 1);
-        }
         if (attachment instanceof Relay) {
             return new ItemStack(DDItems.RELAY.get());
         }

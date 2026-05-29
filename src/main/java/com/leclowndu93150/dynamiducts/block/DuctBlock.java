@@ -1,7 +1,6 @@
 package com.leclowndu93150.dynamiducts.block;
 
 import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
 import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
@@ -162,23 +161,12 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
         int index = getShapeIndex(state);
         if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
             for (Direction dir : Direction.values()) {
-                Attachment att = ductBE.getAttachment(dir);
-                if (att instanceof Cover) {
-                    index |= (1 << dir.ordinal());
-                } else if (att != null) {
+                if (ductBE.getAttachment(dir) != null) {
                     index |= (1 << dir.ordinal());
                 }
             }
         }
-        VoxelShape shape = getShapeCache()[index];
-        if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
-            for (Direction dir : Direction.values()) {
-                if (ductBE.getAttachment(dir) instanceof Cover) {
-                    shape = Shapes.or(shape, DuctHitHelper.coverShape(dir));
-                }
-            }
-        }
-        return shape;
+        return getShapeCache()[index];
     }
 
     @Override

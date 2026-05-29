@@ -4,10 +4,8 @@ import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.client.renderer.DuctBlockEntityRenderer;
 import com.leclowndu93150.dynamiducts.client.renderer.DuctBlockItemRenderer;
 import com.leclowndu93150.dynamiducts.client.renderer.ItemDuctRenderer;
-import com.leclowndu93150.dynamiducts.client.renderer.CoverItemRenderer;
 import com.leclowndu93150.dynamiducts.block.DuctBlock;
 import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
-import com.leclowndu93150.dynamiducts.item.CoverItem;
 import com.leclowndu93150.dynamiducts.init.DDBlockEntities;
 import com.leclowndu93150.dynamiducts.init.DDBlocks;
 import com.leclowndu93150.dynamiducts.init.DDCreativeTab;
@@ -38,7 +36,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -56,7 +53,6 @@ public class DynamiDucts {
 
     public static final String MODID = "dynamiducts";
     public static final Logger LOG = LogUtils.getLogger();
-    private static final float TD_COVER_PREVIEW_ALPHA = 80.0F / 255.0F;
 
     public DynamiDucts(IEventBus modEventBus, ModContainer modContainer) {
         DDAttachments.bootstrap();
@@ -188,13 +184,6 @@ public class DynamiDucts {
                     DDItems.STRUCTURAL_DUCT,
                     DDItems.LUX_DUCT
             );
-
-            event.registerItem(new IClientItemExtensions() {
-                @Override
-                public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
-                    return CoverItemRenderer.get();
-                }
-            }, DDItems.COVER);
         }
 
         @SuppressWarnings({"unchecked", "rawtypes"})
@@ -245,36 +234,6 @@ public class DynamiDucts {
                     0.0F,
                     0.4F
             );
-
-            var player = Minecraft.getInstance().player;
-            if (player == null || ductBE == null) {
-                return;
-            }
-
-            var heldStack = player.getMainHandItem();
-            BlockState coverState = heldStack.getItem() instanceof CoverItem ? CoverItem.getCoverState(heldStack) : null;
-            if (coverState == null || hit.part() == DuctHitHelper.HitPart.COVER || ductBE.getAttachment(hit.side()) != null) {
-                return;
-            }
-
-            event.getPoseStack().pushPose();
-            event.getPoseStack().translate(
-                    blockPos.getX() - cameraPos.x,
-                    blockPos.getY() - cameraPos.y,
-                    blockPos.getZ() - cameraPos.z
-            );
-            DuctBlockEntityRenderer.renderCoverPreview(
-                    coverState,
-                    Minecraft.getInstance().level,
-                    blockPos,
-                    hit.side(),
-                    event.getPoseStack(),
-                    event.getMultiBufferSource(),
-                    LevelRenderer.getLightColor(Minecraft.getInstance().level, blockPos),
-                    OverlayTexture.NO_OVERLAY,
-                    TD_COVER_PREVIEW_ALPHA
-            );
-            event.getPoseStack().popPose();
         }
     }
 }

@@ -53,9 +53,6 @@ public final class DDTooltipHelper {
     public static void appendDuctTooltip(ItemStack stack, Block block, List<Component> tooltip) {
         if (!Screen.hasShiftDown()) {
             tooltip.add(shiftForDetails());
-            if (block == DDBlocks.STRUCTURAL_DUCT.get()) {
-                tooltip.add(info("info.dynamiducts.duct.cover"));
-            }
             return;
         }
         if (block instanceof EnergyDuctBlock energyBlock) {
@@ -197,9 +194,7 @@ public final class DDTooltipHelper {
 
     private static void addStructuralDuctTooltip(Block block, List<Component> tooltip) {
         tooltip.add(info("info.dynamiducts.duct.structure"));
-        if (block == DDBlocks.STRUCTURAL_DUCT.get()) {
-            tooltip.add(info("info.dynamiducts.duct.cover"));
-        } else if (block == DDBlocks.LUX_DUCT.get()) {
+        if (block == DDBlocks.LUX_DUCT.get()) {
             tooltip.add(info("info.dynamiducts.duct.light"));
         }
     }

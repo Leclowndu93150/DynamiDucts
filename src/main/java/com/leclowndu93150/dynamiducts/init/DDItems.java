@@ -10,7 +10,6 @@ import com.leclowndu93150.dynamiducts.attachment.servo.ServoItem;
 import com.leclowndu93150.dynamiducts.core.attachment.AttachmentPlacementHelper;
 import com.leclowndu93150.dynamiducts.core.attachment.AttachmentTier;
 import com.leclowndu93150.dynamiducts.item.AttachmentItem;
-import com.leclowndu93150.dynamiducts.item.CoverItem;
 import com.leclowndu93150.dynamiducts.item.DuctBlockItem;
 import com.leclowndu93150.dynamiducts.item.RelayItem;
 import com.leclowndu93150.dynamiducts.item.DDTooltipHelper;
@@ -150,8 +149,6 @@ public class DDItems {
 
     public static final DeferredItem<RelayItem> RELAY = ITEMS.register("relay",
             () -> new RelayItem(new Item.Properties()));
-    public static final DeferredItem<CoverItem> COVER = ITEMS.register("cover",
-            () -> new CoverItem(new Item.Properties()));
 
     public static final DeferredItem<WrenchItem> WRENCH = ITEMS.register("wrench",
             () -> new WrenchItem(new Item.Properties().stacksTo(1)));

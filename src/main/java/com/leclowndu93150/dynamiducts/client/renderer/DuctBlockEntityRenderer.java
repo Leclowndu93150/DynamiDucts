@@ -5,45 +5,31 @@ import codechicken.lib.render.CCRenderState;
 import codechicken.lib.vec.Translation;
 import codechicken.lib.vec.uv.IconTransformation;
 import com.leclowndu93150.dynamiducts.DynamiDucts;
-import com.leclowndu93150.dynamiducts.attachment.cover.Cover;
 import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
 import com.leclowndu93150.dynamiducts.block.DuctBlock;
-import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
 import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
 import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
 import com.leclowndu93150.dynamiducts.duct.fluid.FluidDuctUnit;
-import codechicken.lib.model.CachedFormat;
-import codechicken.lib.model.Quad;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEntity> {
@@ -53,10 +39,6 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     private static final String GLOWSTONE_STILL = "fluid/glowstone_still";
     private static final String CRYOTHEUM_STILL = "fluid/cryotheum_still";
     private static final Translation HALF_TRANSLATION = new Translation(0.5, 0.5, 0.5);
-    private static final float COVER_THICKNESS = 1.0F / 16.0F;
-    private static final int[] COVER_AXIS_BY_SIDE = {1, 1, 2, 2, 0, 0};
-    private static final float[] COVER_SOFT_BOUNDS = {0.0F, 1.0F, 0.0F, 1.0F, 0.0F, 1.0F};
-    private static final float COVER_EDGE_CLAMP = 1.0F / 512.0F;
     private final BlockRenderDispatcher blockRenderer;
     private final Map<String, TextureAtlasSprite> spriteCache = new HashMap<>();
     private final Map<Block, String> ductNameCache = new HashMap<>();
@@ -401,9 +383,6 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
                 } else {
                     continue;
                 }
-            } else if (att instanceof Cover) {
-                renderCover((Cover) att, poseStack, bufferSource, ccrs.brightness, ccrs.overlay);
-                continue;
             } else if (att instanceof Relay relay) {
                 texPath = "block/duct/attachment/signallers/signaller";
                 model = DuctModels.modelConnection[1 + (relay.getType() & 1)][i];
@@ -419,172 +398,6 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
         }
     }
 
-    private void renderCover(Cover cover, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        renderCoverModel(cover.getCoverState(), cover.getParent().getLevel(), cover.getParent().getBlockPos(),
-                cover.getSide(), poseStack, bufferSource, packedLight, packedOverlay, 1.0F, 0.0F);
-    }
-
-    public static void renderCoverPreview(BlockState coverState, net.minecraft.world.level.Level level, BlockPos pos,
-                                          Direction side, PoseStack poseStack, MultiBufferSource bufferSource,
-                                          int packedLight, int packedOverlay, float alpha) {
-        renderCoverModel(coverState, level, pos, side, poseStack, bufferSource, packedLight, packedOverlay, alpha, 1.0F / 512.0F);
-    }
-
-    private static void renderCoverModel(BlockState coverState, net.minecraft.world.level.Level level, BlockPos pos,
-                                         Direction side, PoseStack poseStack, MultiBufferSource bufferSource,
-                                         int packedLight, int packedOverlay, float alpha, float outwardOffset) {
-        if (!com.leclowndu93150.dynamiducts.item.CoverItem.isValidCoverState(coverState)) {
-            return;
-        }
-
-        poseStack.pushPose();
-        if (outwardOffset != 0.0F) {
-            poseStack.translate(
-                    side.getStepX() * outwardOffset,
-                    side.getStepY() * outwardOffset,
-                    side.getStepZ() * outwardOffset
-            );
-        }
-
-        BakedModel model = Minecraft.getInstance().getBlockRenderer().getBlockModel(coverState);
-        AABB bounds = DuctHitHelper.coverBox(side);
-        TextureAtlasSprite sideSprite = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                .apply(ResourceLocation.fromNamespaceAndPath(DynamiDucts.MODID, "block/duct/attachment/cover/cover_side"));
-        VertexConsumer consumer = bufferSource.getBuffer(ItemBlockRenderTypes.getRenderType(coverState, false));
-        PoseStack.Pose pose = poseStack.last();
-
-        for (BakedQuad quad : sliceCoverQuads(coverState, pos, model, side, bounds, sideSprite)) {
-            int tint = quad.isTinted()
-                    ? Minecraft.getInstance().getBlockColors().getColor(coverState, level, pos, quad.getTintIndex())
-                    : -1;
-            float red = tint == -1 ? 1.0F : FastColor.ARGB32.red(tint) / 255.0F;
-            float green = tint == -1 ? 1.0F : FastColor.ARGB32.green(tint) / 255.0F;
-            float blue = tint == -1 ? 1.0F : FastColor.ARGB32.blue(tint) / 255.0F;
-            consumer.putBulkData(pose, quad, red, green, blue, alpha, packedLight, packedOverlay);
-        }
-        poseStack.popPose();
-    }
-
-    public static List<BakedQuad> sliceCoverQuads(BlockState state, BlockPos pos, BakedModel model,
-                                                             Direction side, AABB bounds, TextureAtlasSprite sideSprite) {
-        List<BakedQuad> sourceQuads = new ArrayList<>();
-        long seed = state.getSeed(pos);
-
-        sourceQuads.addAll(model.getQuads(state, null, RandomSource.create(seed)));
-        for (Direction face : Direction.values()) {
-            sourceQuads.addAll(model.getQuads(state, face, RandomSource.create(seed)));
-        }
-
-        List<BakedQuad> result = new ArrayList<>(sourceQuads.size());
-        for (BakedQuad bakedQuad : sourceQuads) {
-            Quad quad = new Quad(CachedFormat.BLOCK);
-            quad.reset(CachedFormat.BLOCK);
-            quad.put(bakedQuad);
-            sliceCoverQuad(quad, side, bounds, sideSprite);
-            result.add(quad.bake());
-        }
-        return result;
-    }
-
-    private static void sliceCoverQuad(Quad quad, Direction side, AABB bounds, TextureAtlasSprite sideSprite) {
-        int sideIndex = side.ordinal();
-        int axis = COVER_AXIS_BY_SIDE[sideIndex];
-        float softBound = COVER_SOFT_BOUNDS[sideIndex];
-        float oppositeBound = 1.0F - softBound;
-        boolean differentFromNear = false;
-        boolean differentFromFar = false;
-        boolean[] flat = {true, true, true};
-        float[] first = quad.vertices[0].vec();
-        float[][] positions = new float[4][3];
-
-        for (int vertex = 0; vertex < 4; vertex++) {
-            float[] vec = quad.vertices[vertex].vec();
-            positions[vertex][0] = vec[0];
-            positions[vertex][1] = vec[1];
-            positions[vertex][2] = vec[2];
-            differentFromNear |= positions[vertex][axis] != softBound;
-            differentFromFar |= positions[vertex][axis] != oppositeBound;
-
-            if (vertex != 0) {
-                flat[0] &= vec[0] == first[0];
-                flat[1] &= vec[1] == first[1];
-                flat[2] &= vec[2] == first[2];
-            }
-        }
-
-        int slicedAxis = -1;
-        if (differentFromNear && differentFromFar) {
-            for (int axisIndex = 0; axisIndex < 3; axisIndex++) {
-                if (flat[axisIndex]) {
-                    if (axisIndex != axis) {
-                        slicedAxis = axisIndex;
-                        break;
-                    }
-                    differentFromNear = false;
-                }
-            }
-        }
-
-        for (int vertex = 0; vertex < 4; vertex++) {
-            boolean offFace = positions[vertex][axis] != softBound;
-            for (int axisIndex = 0; axisIndex < 3; axisIndex++) {
-                if (axisIndex == axis) {
-                    positions[vertex][axisIndex] = clampToCoverBounds(positions[vertex][axisIndex], bounds, axisIndex);
-                } else if (differentFromNear && differentFromFar && offFace) {
-                    positions[vertex][axisIndex] = clampToVisibleArea(positions[vertex][axisIndex]);
-                }
-            }
-
-            if (slicedAxis != -1) {
-                float u;
-                float v;
-                if (slicedAxis == 0) {
-                    u = positions[vertex][1];
-                    v = positions[vertex][2];
-                } else if (slicedAxis == 1) {
-                    u = positions[vertex][0];
-                    v = positions[vertex][2];
-                } else {
-                    u = positions[vertex][0];
-                    v = positions[vertex][1];
-                }
-                quad.vertices[vertex].uv()[0] = sideSprite.getU(clamp01(u));
-                quad.vertices[vertex].uv()[1] = sideSprite.getV(clamp01(v));
-            }
-
-            float[] vec = quad.vertices[vertex].vec();
-            vec[0] = positions[vertex][0];
-            vec[1] = positions[vertex][1];
-            vec[2] = positions[vertex][2];
-        }
-
-        if (slicedAxis != -1) {
-            quad.tintIndex = -1;
-            quad.sprite = sideSprite;
-        }
-        quad.calculateOrientation(true);
-    }
-
-    private static float clampToCoverBounds(float value, AABB bounds, int axis) {
-        double min = axis == 0 ? bounds.minX : axis == 1 ? bounds.minY : bounds.minZ;
-        double max = axis == 0 ? bounds.maxX : axis == 1 ? bounds.maxY : bounds.maxZ;
-        if (value < min) {
-            return (float) (min - (min - value) * COVER_EDGE_CLAMP);
-        }
-        if (value > max) {
-            return (float) (max + (value - max) * COVER_EDGE_CLAMP);
-        }
-        return value;
-    }
-
-    private static float clampToVisibleArea(float value) {
-        return Math.max(COVER_EDGE_CLAMP, Math.min(1.0F - COVER_EDGE_CLAMP, value));
-    }
-
-    private static float clamp01(float value) {
-        return Math.max(0.0F, Math.min(1.0F, value));
-    }
-
     protected int getConnectionMask(DuctBlockEntity be, BlockState state) {
         int mask = 0;
         for (Direction dir : Direction.values()) {
@@ -596,9 +409,7 @@ public class DuctBlockEntityRenderer implements BlockEntityRenderer<DuctBlockEnt
     }
 
     private boolean isConnected(DuctBlockEntity be, BlockState state, Direction dir) {
-        boolean connected = state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir));
-        Attachment attachment = be.getAttachment(dir);
-        return connected || (attachment != null && !(attachment instanceof Cover));
+        return state.getValue(DuctBlock.PROPERTY_BY_DIRECTION.get(dir)) || be.getAttachment(dir) != null;
     }
 
     private boolean isExternalConnection(DuctBlockEntity be, BlockState state, Direction dir) {
