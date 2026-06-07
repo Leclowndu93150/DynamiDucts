@@ -64,7 +64,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
     public void balanceGrid() {
         int totalDucts = Math.max(1, nodeSet.size() + idleSet.size());
         tank.setCapacity(totalDucts * capacityPerDuct);
-        tank.setThroughput(totalDucts * throughputPerDuct);
+        tank.setThroughput(throughputPerDuct);
     }
 
     @Override

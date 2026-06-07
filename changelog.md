@@ -5,6 +5,11 @@
 
 ## Bug Fixes
 - Fixed items extracted by servos/retrievers skipping the first pipe visually. The item now appears inside the pipe with the servo and travels through it like every other pipe in the network.
+- Fixed the redstone indicator on servos, retrievers and filters not updating visually when a neighboring redstone signal turned on or off (issue #4). The signaller LED on the side of the attachment now flips colors immediately when the signal changes.
+- Fixed fluid servos and retrievers extracting in big bursts every few seconds, which left the fluiducts looking empty most of the time. Fluid servos and retrievers now run every tick (throttled by tier) like in Thermal Dynamics 1.12, so the fluid stays visible while it's flowing.
+
+## Balance
+- Tuned fluid throughput to match Thermal Dynamics 1.12. Base fluiducts now flow 120 mB/t (down from 600 × network size), hardened/energy ducts flow 240 mB/t, and super-laminar ducts flow 1920 mB/t. Fluid servos and retrievers extract at 60/90/120/180/240 mB/t for basic/hardened/reinforced/signalum/resonant tiers respectively.
 - Fixed a crash (ConcurrentModificationException) when fluiducts interact with certain modded tanks (e.g. Railcraft Water Tank). The crash occurred when toggling a servo on a fluiduct connected to a machine, or when connecting two duct segments while fluid was actively flowing.
 - Fixed super-laminar fluiducts (opaque and clear) not pushing fluid into adjacent blocks. Fluid could enter the network from auto-ejecting machines but never came out the other side. Super-laminar fluiducts now behave like regular fluiducts with much higher throughput (16x base) instead of the broken infinite throughput.
 - Fixed attachment placement on super-laminar fluiducts. They previously used the oversized "bronze-framed" hitbox shape meant for superconductor ducts. They now use a dedicated hitbox matched to the actual super-laminar model — same size as a regular duct, just expanded by half a pixel on each side to cover the bronze ring.

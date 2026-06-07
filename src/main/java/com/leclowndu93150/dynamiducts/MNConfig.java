@@ -19,8 +19,8 @@ public class MNConfig {
             .defineInRange("fluid.baseCapacity", 3000, 500, 24000);
 
     private static final ModConfigSpec.IntValue FLUID_BASE_THROUGHPUT = BUILDER
-            .comment("Base fluid throughput (mB/t) per duct.")
-            .defineInRange("fluid.baseThroughput", 600, 100, 6000);
+            .comment("Base fluid throughput (mB/t) for a fluiduct grid. Matches Thermal Dynamics 1.12 water flow.")
+            .defineInRange("fluid.baseThroughput", 120, 20, 6000);
 
     private static final ModConfigSpec.IntValue ITEM_BASE_SPEED = BUILDER
             .comment("Base item travel speed in ticks per duct.")

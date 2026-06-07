@@ -30,24 +30,34 @@ public class RetrieverFluid extends ConnectionBase {
     }
 
     @Override
+    public void tick() {
+        if (!isActive()) return;
+        performAction();
+    }
+
+    @Override
     protected void performAction() {
         var level = parent.getLevel();
         if (level == null) return;
 
         var unit = parent.getDuctUnit(DuctToken.FLUID);
         if (!(unit instanceof FluidDuctUnit fluidUnit)) return;
-        if (fluidUnit.getGrid() == null) return;
+        var grid = fluidUnit.getGrid();
+        if (grid == null) return;
 
-        for (FluidDuctUnit node : fluidUnit.getGrid().getNodeSnapshot()) {
+        int maxInput = tier.fluidDrainAmount();
+        if (maxInput <= 0) return;
+
+        for (FluidDuctUnit node : grid.getNodeSnapshot()) {
             for (Direction dir : Direction.values()) {
                 IFluidHandler source = node.getTileCache(dir);
                 if (source == null) continue;
 
-                FluidStack drained = source.drain(tier.fluidDrainAmount(), IFluidHandler.FluidAction.SIMULATE);
+                FluidStack drained = source.drain(maxInput, IFluidHandler.FluidAction.SIMULATE);
                 if (drained.isEmpty()) continue;
                 if (!filter.matchesFluid(drained)) continue;
 
-                int filled = fluidUnit.getGrid().fill(drained, IFluidHandler.FluidAction.EXECUTE);
+                int filled = grid.fill(drained, IFluidHandler.FluidAction.EXECUTE);
                 if (filled > 0) {
                     source.drain(filled, IFluidHandler.FluidAction.EXECUTE);
                     return;

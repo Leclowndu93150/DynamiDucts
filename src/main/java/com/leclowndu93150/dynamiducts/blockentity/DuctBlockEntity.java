@@ -159,15 +159,20 @@ public abstract class DuctBlockEntity extends BlockEntity {
                 NetworkManager.get(serverLevel).scheduleFormation(unit);
             }
             boolean powered = level.hasNeighborSignal(worldPosition);
+            boolean powerStateChanged = false;
             for (Attachment att : attachments) {
-                if (att instanceof ConnectionBase conn) {
-                    conn.updatePowerState(powered);
+                if (att instanceof ConnectionBase conn && conn.updatePowerState(powered)) {
+                    powerStateChanged = true;
                 }
             }
             level.invalidateCapabilities(worldPosition);
             if (connectionTypesChanged) {
                 setChanged();
                 refreshVisualState();
+            }
+            if (powerStateChanged) {
+                setChanged();
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
             }
         }
     }
