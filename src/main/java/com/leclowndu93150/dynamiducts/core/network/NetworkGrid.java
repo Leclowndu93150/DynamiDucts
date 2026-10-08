@@ -106,6 +106,10 @@ public abstract class NetworkGrid<T extends DuctUnit<T, ?, ?>> {
         return idleSnapshot != null ? idleSnapshot : (List<T>) EMPTY;
     }
 
+    protected boolean isTicking() {
+        return ticking;
+    }
+
     protected void beginTick() {
         ticking = true;
     }

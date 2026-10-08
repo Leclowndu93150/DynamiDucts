@@ -1,23 +1,21 @@
-# v1.1.0
-
-## Removed
-- Removed Covers. The feature was incomplete and never quite worked right, so it's gone for now.
+# v1.1.1
 
 ## Bug Fixes
-- Fixed items extracted by servos/retrievers skipping the first pipe visually. The item now appears inside the pipe with the servo and travels through it like every other pipe in the network.
-- Fixed the redstone indicator on servos, retrievers and filters not updating visually when a neighboring redstone signal turned on or off (issue #4). The signaller LED on the side of the attachment now flips colors immediately when the signal changes.
-- Fixed fluid servos and retrievers extracting in big bursts every few seconds, which left the fluiducts looking empty most of the time. Fluid servos and retrievers now run every tick (throttled by tier) like in Thermal Dynamics 1.12, so the fluid stays visible while it's flowing.
+- Fixed fluid filters doing nothing. Whitelists and blacklists on fluid filters are now applied when fluid leaves the network, the same way item filters already worked.
+- Fixed fluid servos and retrievers ignoring their whitelist on machines with several tanks. They used to look only at the first fluid the machine offered and give up if it didn't match. Every tank is now checked against the filter.
+- Fixed the "Match Components" toggle being ignored for fluids.
+- Fixed fluid servos and retrievers being able to duplicate fluid when the source tank handed over less than it promised.
+- Fixed servos, retrievers, filters and relays being deleted when the duct they were on got broken. They now drop as items.
+- Fixed ducts stopping working when connected to multiblocks (Immersive Engineering coke ovens and blast furnaces, Create fluid tanks, etc.) until an attachment was broken and replaced. This happened because multiblocks reform when their chunk loads. Ducts now notice when a neighboring block's inventory, tank or energy storage appears, changes or goes away, and reconnect on their own.
+- Fixed fluxducts not connecting to Immersive Engineering multiblocks.
+- Fixed ducts at chunk borders continuing to push into machines in unloaded chunks, and not reconnecting when those chunks loaded again.
+- Fixed a single fluxduct duplicating energy (issue #12). A fluxduct touching more than one receiver could hand out more energy than it held, outputting its full transfer rate from a generator producing a fraction of that.
+- Fixed fluxducts pushing energy back into the generator that was feeding them.
+- Fixed fluxduct networks losing stored energy when two networks merged, and duplicating energy when part of a network unloaded and reloaded.
+- Fixed a single Cryo-Stabilized Fluxduct not transferring any energy (issue #11). Cryo-Stabilized Fluxducts also now accept energy pushed into them, so Mekanism cables and energy cubes set to push work with them.
 
 ## Balance
-- Tuned fluid throughput to match Thermal Dynamics 1.12. Base fluiducts now flow 120 mB/t (down from 600 × network size), hardened/energy ducts flow 240 mB/t, and super-laminar ducts flow 1920 mB/t. Fluid servos and retrievers extract at 60/90/120/180/240 mB/t for basic/hardened/reinforced/signalum/resonant tiers respectively.
-- Fixed a crash (ConcurrentModificationException) when fluiducts interact with certain modded tanks (e.g. Railcraft Water Tank). The crash occurred when toggling a servo on a fluiduct connected to a machine, or when connecting two duct segments while fluid was actively flowing.
-- Fixed super-laminar fluiducts (opaque and clear) not pushing fluid into adjacent blocks. Fluid could enter the network from auto-ejecting machines but never came out the other side. Super-laminar fluiducts now behave like regular fluiducts with much higher throughput (16x base) instead of the broken infinite throughput.
-- Fixed attachment placement on super-laminar fluiducts. They previously used the oversized "bronze-framed" hitbox shape meant for superconductor ducts. They now use a dedicated hitbox matched to the actual super-laminar model — same size as a regular duct, just expanded by half a pixel on each side to cover the bronze ring.
-
-- Cleaned up connection visuals between ducts of the same family. Item ducts of any tier (basic, fast, dense, vacuum, energy, energy-fast) now connect to each other without showing the bronze connector band, matching Thermal Dynamics 1.12 behavior. Fluid ducts behave the same, except super-laminar ducts still display a band when joining a different tier. Fluxducts (energy ducts) intentionally keep their band on every join since they handle different transfer rates.
-- Fixed wrenching, attachment placement and tooltips on viaducts and on the bronze-framed cryo/superconductor fluxducts. The interaction hitbox was previously the same as a normal duct's, which left huge dead zones around the wider arms. Each duct size now has its own matching hitbox, and the resolver prefers the connected side closest to where you clicked.
-
-## Performance
-- Replaced internal data structures across all grid types (fluid, item, energy, transport, structural) with faster alternatives, reducing iteration overhead during server ticks.
-- Grid node snapshots are now cached and only rebuilt when the network changes, avoiding unnecessary allocations every tick.
-- Mutations to duct networks that happen mid-tick (e.g. from external mod callbacks) are now safely deferred, preventing crashes without copying the entire node list each tick.
+- Long-Range Viaducts now behave like in Thermal Dynamics 1.12 (issue #10):
+  - They only connect to other Long-Range Viaducts or Linking Viaducts.
+  - They can no longer be used as entrances or exits. Existing Long-Range entrances can be cleared with a wrench.
+  - They can't branch. A Long-Range Viaduct with more than two possible connections connects to nothing, so T and X junctions need a Linking Viaduct in between.

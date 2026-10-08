@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 public abstract class Attachment {
 
@@ -42,6 +43,10 @@ public abstract class Attachment {
     }
 
     public void onNeighborChange() {
+    }
+
+    public ItemStack getDrop() {
+        return ItemStack.EMPTY;
     }
 
     public DuctBlockEntity getParent() {

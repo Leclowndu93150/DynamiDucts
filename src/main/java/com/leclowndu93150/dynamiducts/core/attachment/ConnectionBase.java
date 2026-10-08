@@ -1,9 +1,11 @@
 package com.leclowndu93150.dynamiducts.core.attachment;
 
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
+import com.leclowndu93150.dynamiducts.init.DDItems;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 public abstract class ConnectionBase extends Attachment {
@@ -62,6 +64,38 @@ public abstract class ConnectionBase extends Attachment {
     }
 
     protected abstract void performAction();
+
+    @Override
+    public ItemStack getDrop() {
+        if (isServo()) {
+            return new ItemStack(switch (tier.index()) {
+                case 0 -> DDItems.SERVO_BASIC.get();
+                case 1 -> DDItems.SERVO_HARDENED.get();
+                case 2 -> DDItems.SERVO_REINFORCED.get();
+                case 3 -> DDItems.SERVO_SIGNALUM.get();
+                default -> DDItems.SERVO_RESONANT.get();
+            });
+        }
+        if (isFilter()) {
+            return new ItemStack(switch (tier.index()) {
+                case 0 -> DDItems.FILTER_BASIC.get();
+                case 1 -> DDItems.FILTER_HARDENED.get();
+                case 2 -> DDItems.FILTER_REINFORCED.get();
+                case 3 -> DDItems.FILTER_SIGNALUM.get();
+                default -> DDItems.FILTER_RESONANT.get();
+            });
+        }
+        if (isRetriever()) {
+            return new ItemStack(switch (tier.index()) {
+                case 0 -> DDItems.RETRIEVER_BASIC.get();
+                case 1 -> DDItems.RETRIEVER_HARDENED.get();
+                case 2 -> DDItems.RETRIEVER_REINFORCED.get();
+                case 3 -> DDItems.RETRIEVER_SIGNALUM.get();
+                default -> DDItems.RETRIEVER_RESONANT.get();
+            });
+        }
+        return ItemStack.EMPTY;
+    }
 
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {

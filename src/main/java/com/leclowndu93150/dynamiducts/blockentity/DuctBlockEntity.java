@@ -22,6 +22,7 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -36,6 +37,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
     protected final Map<DuctToken, DuctUnit<?, ?, ?>> ductUnits = new EnumMap<>(DuctToken.class);
     protected final ConnectionType[] connectionTypes = new ConnectionType[6];
     protected final Attachment[] attachments = new Attachment[6];
+    private boolean neighborRefreshPending;
 
     protected DuctBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -47,6 +49,10 @@ public abstract class DuctBlockEntity extends BlockEntity {
     protected abstract void initDuctUnits();
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, DuctBlockEntity be) {
+        if (be.neighborRefreshPending) {
+            be.neighborRefreshPending = false;
+            be.refreshNeighborCaches();
+        }
         for (Attachment att : be.attachments) {
             if (att != null) {
                 att.tick();
@@ -120,6 +126,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
     public void onLoad() {
         super.onLoad();
         for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.clearTileWatchers();
             unit.updateCaches();
         }
         if (level instanceof ServerLevel serverLevel) {
@@ -139,6 +146,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
     }
 
     public void onBroken() {
+        dropAttachments();
         for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
             if (unit instanceof ItemDuctUnit itemUnit) {
                 itemUnit.dropAllItems();
@@ -148,6 +156,33 @@ public abstract class DuctBlockEntity extends BlockEntity {
             }
             unit.invalidate();
         }
+    }
+
+    private void dropAttachments() {
+        if (level == null) return;
+        for (int i = 0; i < attachments.length; i++) {
+            if (attachments[i] == null) continue;
+            ItemStack drop = attachments[i].getDrop();
+            attachments[i] = null;
+            if (!drop.isEmpty()) {
+                Block.popResource(level, worldPosition, drop);
+            }
+        }
+    }
+
+    public void requestNeighborRefresh() {
+        neighborRefreshPending = true;
+    }
+
+    private void refreshNeighborCaches() {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            if (unit.refreshCaches() || unit.getGrid() == null) {
+                unit.invalidate();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+        refreshVisualState();
     }
 
     public void onNeighborChanged() {
@@ -213,6 +248,7 @@ public abstract class DuctBlockEntity extends BlockEntity {
         BlockState updatedState = ductBlock.updateVisualConnections(level, worldPosition, state);
         if (updatedState != state) {
             level.setBlock(worldPosition, updatedState, Block.UPDATE_CLIENTS);
+            ductBlock.onConnectionsChanged(level, worldPosition);
         }
     }
 

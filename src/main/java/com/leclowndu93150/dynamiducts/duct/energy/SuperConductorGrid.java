@@ -9,6 +9,8 @@ import java.util.List;
 
 public class SuperConductorGrid extends EnergyGrid {
 
+    private boolean distributing;
+
     public SuperConductorGrid(ServerLevel level) {
         super(level, Integer.MAX_VALUE, 0);
     }
@@ -18,6 +20,7 @@ public class SuperConductorGrid extends EnergyGrid {
         if (nodeSet.isEmpty()) return;
 
         beginTick();
+        distributing = true;
         try {
             List<EnergyDuctUnit> snapshot = getNodeSnapshot();
             for (EnergyDuctUnit node : snapshot) {
@@ -29,28 +32,31 @@ public class SuperConductorGrid extends EnergyGrid {
                     int available = source.extractEnergy(Integer.MAX_VALUE, true);
                     if (available <= 0) continue;
 
-                    int distributed = distributeToOthers(node, available, snapshot);
-                    if (distributed > 0) {
-                        source.extractEnergy(distributed, false);
+                    int accepted = distribute(node, dir, available, true, snapshot);
+                    if (accepted <= 0) continue;
+
+                    int extracted = source.extractEnergy(accepted, false);
+                    if (extracted > 0) {
+                        distribute(node, dir, extracted, false, snapshot);
                     }
                 }
             }
         } finally {
+            distributing = false;
             endTick();
         }
     }
 
-    private int distributeToOthers(EnergyDuctUnit sourceNode, int available, List<EnergyDuctUnit> snapshot) {
+    private int distribute(EnergyDuctUnit sourceNode, Direction sourceSide, int available, boolean simulate, List<EnergyDuctUnit> snapshot) {
         int totalSent = 0;
         for (EnergyDuctUnit targetNode : snapshot) {
-            if (targetNode == sourceNode) continue;
             if (targetNode.getGrid() != this) continue;
             for (Direction dir : Direction.values()) {
+                if (targetNode == sourceNode && dir == sourceSide) continue;
                 IEnergyStorage target = targetNode.getTileCache(dir);
                 if (target == null || !target.canReceive()) continue;
 
-                int sent = target.receiveEnergy(available - totalSent, false);
-                totalSent += sent;
+                totalSent += target.receiveEnergy(available - totalSent, simulate);
                 if (totalSent >= available) return totalSent;
             }
         }
@@ -68,7 +74,14 @@ public class SuperConductorGrid extends EnergyGrid {
     }
 
     @Override
-    public int receiveEnergy(int maxReceive, boolean simulate) {
-        return 0;
+    public int receiveEnergy(EnergyDuctUnit unit, Direction side, int maxReceive, boolean simulate) {
+        if (distributing || nodeSet.isEmpty()) return 0;
+
+        distributing = true;
+        try {
+            return distribute(unit, side, maxReceive, simulate, getNodeSnapshot());
+        } finally {
+            distributing = false;
+        }
     }
 }

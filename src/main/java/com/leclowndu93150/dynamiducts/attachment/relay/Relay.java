@@ -3,11 +3,13 @@ package com.leclowndu93150.dynamiducts.attachment.relay;
 import com.leclowndu93150.dynamiducts.DynamiDucts;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
+import com.leclowndu93150.dynamiducts.init.DDItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 public class Relay extends Attachment {
@@ -36,6 +38,11 @@ public class Relay extends Attachment {
     @Override
     public boolean isNode() {
         return true;
+    }
+
+    @Override
+    public ItemStack getDrop() {
+        return new ItemStack(DDItems.RELAY.get());
     }
 
     public boolean isInput() {

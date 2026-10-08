@@ -9,7 +9,6 @@ import com.leclowndu93150.dynamiducts.duct.fluid.FluidDuctUnit;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 public class ServoFluid extends ConnectionBase {
@@ -61,13 +60,6 @@ public class ServoFluid extends ConnectionBase {
         int maxInput = tier.fluidDrainAmount();
         if (maxInput <= 0) return;
 
-        FluidStack drained = source.drain(maxInput, IFluidHandler.FluidAction.SIMULATE);
-        if (drained.isEmpty()) return;
-        if (!filter.matchesFluid(drained)) return;
-
-        int filled = grid.fill(drained, IFluidHandler.FluidAction.EXECUTE);
-        if (filled > 0) {
-            source.drain(filled, IFluidHandler.FluidAction.EXECUTE);
-        }
+        grid.extractFrom(source, maxInput, filter::matchesFluid);
     }
 }

@@ -12,6 +12,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 
@@ -65,13 +66,8 @@ public class ItemDuctUnit extends DuctUnit<ItemDuctUnit, ItemGrid, IItemHandler>
     }
 
     @Override
-    public IItemHandler cacheTile(Direction side) {
-        if (parent.getLevel() == null) return null;
-        return parent.getLevel().getCapability(
-                Capabilities.ItemHandler.BLOCK,
-                parent.getBlockPos().relative(side),
-                side.getOpposite()
-        );
+    protected BlockCapability<IItemHandler, Direction> getTileCapability() {
+        return Capabilities.ItemHandler.BLOCK;
     }
 
     public boolean insertItem(ItemStack stack, Direction entrySide) {

@@ -8,7 +8,6 @@ import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
 import com.leclowndu93150.dynamiducts.duct.fluid.FluidDuctUnit;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 public class RetrieverFluid extends ConnectionBase {
@@ -53,15 +52,7 @@ public class RetrieverFluid extends ConnectionBase {
                 IFluidHandler source = node.getTileCache(dir);
                 if (source == null) continue;
 
-                FluidStack drained = source.drain(maxInput, IFluidHandler.FluidAction.SIMULATE);
-                if (drained.isEmpty()) continue;
-                if (!filter.matchesFluid(drained)) continue;
-
-                int filled = grid.fill(drained, IFluidHandler.FluidAction.EXECUTE);
-                if (filled > 0) {
-                    source.drain(filled, IFluidHandler.FluidAction.EXECUTE);
-                    return;
-                }
+                if (grid.extractFrom(source, maxInput, filter::matchesFluid) > 0) return;
             }
         }
     }

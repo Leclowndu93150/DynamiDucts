@@ -8,6 +8,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.BlockCapabilityCache;
+
+import java.util.Arrays;
 
 @SuppressWarnings("unchecked")
 public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGrid<T>, C> {
@@ -15,6 +19,7 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
     protected final DuctBlockEntity parent;
     protected final C[] tileCache;
     protected final T[] ductCache;
+    private final BlockCapabilityCache<C, Direction>[] tileWatchers = new BlockCapabilityCache[6];
     protected G grid;
     protected byte nodeMask;
     protected byte inputMask;
@@ -35,8 +40,36 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
 
     public abstract int getPathWeight();
 
-    public C cacheTile(Direction side) {
+    protected BlockCapability<C, Direction> getTileCapability() {
         return null;
+    }
+
+    public C cacheTile(Direction side) {
+        BlockCapability<C, Direction> capability = getTileCapability();
+        if (capability == null || parent.getLevel() == null) return null;
+        return parent.getLevel().getCapability(capability, parent.getBlockPos().relative(side), side.getOpposite());
+    }
+
+    private void watchTile(Direction side) {
+        BlockCapability<C, Direction> capability = getTileCapability();
+        if (capability == null || parent.isRemoved() || !(parent.getLevel() instanceof ServerLevel serverLevel)) return;
+        BlockCapabilityCache<C, Direction> watcher = tileWatchers[side.ordinal()];
+        if (watcher == null) {
+            watcher = BlockCapabilityCache.create(
+                    capability,
+                    serverLevel,
+                    parent.getBlockPos().relative(side),
+                    side.getOpposite(),
+                    () -> !parent.isRemoved(),
+                    parent::requestNeighborRefresh
+            );
+            tileWatchers[side.ordinal()] = watcher;
+        }
+        watcher.getCapability();
+    }
+
+    public void clearTileWatchers() {
+        Arrays.fill(tileWatchers, null);
     }
 
     public boolean isNode() {
@@ -85,9 +118,13 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
 
             ConnectionType ct = parent.getConnectionType(dir);
             if (ct == ConnectionType.BLOCKED) continue;
+            boolean tileAllowed = ct.allowsTransfer() || (ct.allowsEnergy() && getToken() == DuctToken.ENERGY);
 
             neighbor.setWithOffset(parent.getBlockPos(), dir);
-            if (!parent.getLevel().isLoaded(neighbor)) continue;
+            if (!parent.getLevel().isLoaded(neighbor)) {
+                if (tileAllowed) watchTile(dir);
+                continue;
+            }
 
             if (parent.getLevel().getBlockEntity(neighbor) instanceof DuctBlockEntity otherDuct) {
                 DuctUnit<?, ?, ?> otherUnit = otherDuct.getDuctUnit(getToken());
@@ -97,7 +134,8 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
                 }
             }
 
-            if (ct.allowsTransfer() || (ct.allowsEnergy() && getToken() == DuctToken.ENERGY)) {
+            if (tileAllowed) {
+                watchTile(dir);
                 C cached = cacheTile(dir);
                 if (cached != null) {
                     tileCache[dir.ordinal()] = cached;
@@ -106,6 +144,13 @@ public abstract class DuctUnit<T extends DuctUnit<T, G, C>, G extends NetworkGri
                 }
             }
         }
+    }
+
+    public boolean refreshCaches() {
+        byte previousNodeMask = nodeMask;
+        T[] previousDucts = ductCache.clone();
+        updateCaches();
+        return nodeMask != previousNodeMask || !Arrays.equals(previousDucts, ductCache);
     }
 
     public boolean tickPass(int pass) {

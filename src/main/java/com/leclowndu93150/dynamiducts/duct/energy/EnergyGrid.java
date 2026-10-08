@@ -1,6 +1,7 @@
 package com.leclowndu93150.dynamiducts.duct.energy;
 
 import com.leclowndu93150.dynamiducts.core.network.NetworkGrid;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 
 public class EnergyGrid extends NetworkGrid<EnergyDuctUnit> {
@@ -30,10 +31,20 @@ public class EnergyGrid extends NetworkGrid<EnergyDuctUnit> {
 
     @Override
     public void removeBlock(EnergyDuctUnit unit) {
-        if (unit.isNode() && !nodeSet.isEmpty()) {
-            unit.setEnergyForGrid(getNodeShare(unit));
+        if (!isTicking() && nodeSet.contains(unit)) {
+            int share = getNodeShare(unit);
+            unit.setEnergyForGrid(share);
+            storage.modifyEnergyStored(-share);
         }
         super.removeBlock(unit);
+    }
+
+    @Override
+    public void onMergeFrom(NetworkGrid<?> source) {
+        if (source instanceof EnergyGrid energySource && energySource.storage.getEnergyStored() > 0) {
+            storage.setCapacity(storage.getMaxEnergyStored() + energySource.storage.getMaxEnergyStored());
+            storage.modifyEnergyStored(energySource.storage.getEnergyStored());
+        }
     }
 
     @Override
@@ -82,7 +93,7 @@ public class EnergyGrid extends NetworkGrid<EnergyDuctUnit> {
         }
     }
 
-    public int receiveEnergy(int maxReceive, boolean simulate) {
+    public int receiveEnergy(EnergyDuctUnit unit, Direction side, int maxReceive, boolean simulate) {
         return storage.receiveEnergy(maxReceive, simulate);
     }
 

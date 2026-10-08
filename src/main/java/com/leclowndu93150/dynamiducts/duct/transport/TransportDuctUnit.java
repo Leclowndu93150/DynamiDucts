@@ -1,6 +1,8 @@
 package com.leclowndu93150.dynamiducts.duct.transport;
 
+import com.leclowndu93150.dynamiducts.block.TransportDuctBlock;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
+import com.leclowndu93150.dynamiducts.blockentity.TransportDuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
 import com.leclowndu93150.dynamiducts.core.duct.DuctUnit;
 import com.leclowndu93150.dynamiducts.core.network.ConnectionType;
@@ -16,14 +18,16 @@ import java.util.List;
 
 public class TransportDuctUnit extends DuctUnit<TransportDuctUnit, TransportGrid, Void> {
 
+    private final TransportDuctBlockEntity.Tier tier;
     private final boolean longRange;
     private String endpointName = "";
     private ItemStack endpointIcon = ItemStack.EMPTY;
     private byte endpointSide = -1;
 
-    public TransportDuctUnit(DuctBlockEntity parent, boolean longRange) {
+    public TransportDuctUnit(DuctBlockEntity parent, TransportDuctBlockEntity.Tier tier) {
         super(parent);
-        this.longRange = longRange;
+        this.tier = tier;
+        this.longRange = tier == TransportDuctBlockEntity.Tier.LONG_RANGE;
     }
 
     @Override
@@ -56,7 +60,14 @@ public class TransportDuctUnit extends DuctUnit<TransportDuctUnit, TransportGrid
     }
 
     public boolean isEndpoint() {
-        return endpointSide >= 0;
+        return !longRange && endpointSide >= 0;
+    }
+
+    @Override
+    public boolean canConnectTo(TransportDuctUnit other) {
+        BlockPos delta = other.getPos().subtract(getPos());
+        Direction side = Direction.fromDelta(delta.getX(), delta.getY(), delta.getZ());
+        return side != null && TransportDuctBlock.canLink(parent.getLevel(), getPos(), tier, side);
     }
 
     public byte getEndpointSide() {
@@ -96,9 +107,11 @@ public class TransportDuctUnit extends DuctUnit<TransportDuctUnit, TransportGrid
     public boolean trySetEndpoint(Direction side) {
         if (getDuctNeighbor(side) != null) return false;
 
-        if (endpointSide == side.ordinal()) {
+        if (longRange || endpointSide == side.ordinal()) {
+            if (endpointSide < 0) return false;
+            Direction previous = Direction.values()[endpointSide];
             endpointSide = -1;
-            parent.setConnectionType(side, ConnectionType.NORMAL);
+            parent.setConnectionType(previous, ConnectionType.NORMAL);
         } else {
             if (endpointSide >= 0) {
                 parent.setConnectionType(Direction.values()[endpointSide], ConnectionType.NORMAL);

@@ -241,14 +241,22 @@ public abstract class DuctBlock extends Block implements EntityBlock, SimpleWate
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
         if (!level.isClientSide) {
             BlockState updatedState = updateVisualConnections(level, pos, state);
-            if (updatedState != state) {
+            boolean connectionsChanged = updatedState != state;
+            if (connectionsChanged) {
                 level.setBlock(pos, updatedState, Block.UPDATE_CLIENTS);
             }
 
             if (level.getBlockEntity(pos) instanceof DuctBlockEntity ductBE) {
                 ductBE.onNeighborChanged();
             }
+
+            if (connectionsChanged) {
+                onConnectionsChanged(level, pos);
+            }
         }
+    }
+
+    public void onConnectionsChanged(Level level, BlockPos pos) {
     }
 
     @Override

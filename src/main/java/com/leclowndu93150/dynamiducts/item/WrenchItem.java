@@ -1,15 +1,11 @@
 package com.leclowndu93150.dynamiducts.item;
 
-import com.leclowndu93150.dynamiducts.attachment.relay.Relay;
 import com.leclowndu93150.dynamiducts.block.DuctHitHelper;
 import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
 import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
-import com.leclowndu93150.dynamiducts.core.attachment.AttachmentTier;
-import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
 import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
 import com.leclowndu93150.dynamiducts.core.network.ConnectionType;
 import com.leclowndu93150.dynamiducts.duct.transport.TransportDuctUnit;
-import com.leclowndu93150.dynamiducts.init.DDItems;
 import com.leclowndu93150.dynamiducts.mixin.UseOnContextAccessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -78,7 +74,7 @@ public class WrenchItem extends Item {
         if (attachment == null) {
             return;
         }
-        ItemStack drop = getAttachmentDrop(attachment);
+        ItemStack drop = attachment.getDrop();
         ductBE.removeAttachment(side);
         if (!drop.isEmpty()) {
             Block.popResource(level, pos, drop);
@@ -92,60 +88,8 @@ public class WrenchItem extends Item {
             Block.popResource(level, pos, ductDrop);
         }
 
-        for (Attachment attachment : ductBE.getAttachments()) {
-            if (attachment == null) {
-                continue;
-            }
-            ItemStack drop = getAttachmentDrop(attachment);
-            if (!drop.isEmpty()) {
-                Block.popResource(level, pos, drop);
-            }
-        }
-
         level.removeBlock(pos, false);
         playPopSound(level, pos);
-    }
-
-    private static ItemStack getAttachmentDrop(Attachment attachment) {
-        if (attachment instanceof Relay) {
-            return new ItemStack(DDItems.RELAY.get());
-        }
-        if (attachment instanceof ConnectionBase connection) {
-            return getConnectionDrop(connection);
-        }
-        return ItemStack.EMPTY;
-    }
-
-    private static ItemStack getConnectionDrop(ConnectionBase connection) {
-        AttachmentTier tier = connection.getTier();
-        if (connection.isServo()) {
-            return new ItemStack(switch (tier.index()) {
-                case 0 -> DDItems.SERVO_BASIC.get();
-                case 1 -> DDItems.SERVO_HARDENED.get();
-                case 2 -> DDItems.SERVO_REINFORCED.get();
-                case 3 -> DDItems.SERVO_SIGNALUM.get();
-                default -> DDItems.SERVO_RESONANT.get();
-            });
-        }
-        if (connection.isFilter()) {
-            return new ItemStack(switch (tier.index()) {
-                case 0 -> DDItems.FILTER_BASIC.get();
-                case 1 -> DDItems.FILTER_HARDENED.get();
-                case 2 -> DDItems.FILTER_REINFORCED.get();
-                case 3 -> DDItems.FILTER_SIGNALUM.get();
-                default -> DDItems.FILTER_RESONANT.get();
-            });
-        }
-        if (connection.isRetriever()) {
-            return new ItemStack(switch (tier.index()) {
-                case 0 -> DDItems.RETRIEVER_BASIC.get();
-                case 1 -> DDItems.RETRIEVER_HARDENED.get();
-                case 2 -> DDItems.RETRIEVER_REINFORCED.get();
-                case 3 -> DDItems.RETRIEVER_SIGNALUM.get();
-                default -> DDItems.RETRIEVER_RESONANT.get();
-            });
-        }
-        return ItemStack.EMPTY;
     }
 
     private static void playPopSound(Level level, BlockPos pos) {

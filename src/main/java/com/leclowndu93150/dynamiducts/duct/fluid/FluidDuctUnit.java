@@ -8,6 +8,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -53,13 +54,8 @@ public class FluidDuctUnit extends DuctUnit<FluidDuctUnit, FluidGrid, IFluidHand
     }
 
     @Override
-    public IFluidHandler cacheTile(Direction side) {
-        if (parent.getLevel() == null) return null;
-        return parent.getLevel().getCapability(
-                Capabilities.FluidHandler.BLOCK,
-                parent.getBlockPos().relative(side),
-                side.getOpposite()
-        );
+    protected BlockCapability<IFluidHandler, Direction> getTileCapability() {
+        return Capabilities.FluidHandler.BLOCK;
     }
 
     public IFluidHandler createCapability(Direction side) {

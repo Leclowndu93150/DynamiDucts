@@ -7,6 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
@@ -15,6 +16,8 @@ public class EnergyDuctUnit extends DuctUnit<EnergyDuctUnit, EnergyGrid, IEnergy
     private final int transferLimit;
     private final int capacityPerDuct;
     private int energyForGrid;
+    private byte receivedMask;
+    private long receivedGameTime = -1;
 
     public EnergyDuctUnit(DuctBlockEntity parent, int transferLimit, int capacityPerDuct) {
         super(parent);
@@ -48,13 +51,8 @@ public class EnergyDuctUnit extends DuctUnit<EnergyDuctUnit, EnergyGrid, IEnergy
     }
 
     @Override
-    public IEnergyStorage cacheTile(Direction side) {
-        if (parent.getLevel() == null) return null;
-        return parent.getLevel().getCapability(
-                Capabilities.EnergyStorage.BLOCK,
-                parent.getBlockPos().relative(side),
-                side.getOpposite()
-        );
+    protected BlockCapability<IEnergyStorage, Direction> getTileCapability() {
+        return Capabilities.EnergyStorage.BLOCK;
     }
 
     @Override
@@ -63,20 +61,32 @@ public class EnergyDuctUnit extends DuctUnit<EnergyDuctUnit, EnergyGrid, IEnergy
         if (pass != 0) return true;
 
         int sendable = grid.getSendableEnergy();
-        if (sendable <= 0) return true;
-
+        int sent = 0;
         for (Direction dir : Direction.values()) {
+            if (sent >= sendable) break;
+            if (receivedThisTick(dir)) continue;
             IEnergyStorage target = tileCache[dir.ordinal()];
             if (target == null || !target.canReceive()) continue;
 
-            int sent = target.receiveEnergy(sendable, false);
-            if (sent > 0) {
-                grid.useEnergy(sent);
-                sendable = grid.getSendableEnergy();
-                if (sendable <= 0) break;
-            }
+            sent += target.receiveEnergy(sendable - sent, false);
+        }
+        if (sent > 0) {
+            grid.useEnergy(sent);
         }
         return true;
+    }
+
+    private void markReceived(Direction side) {
+        long gameTime = parent.getLevel().getGameTime();
+        if (gameTime != receivedGameTime) {
+            receivedGameTime = gameTime;
+            receivedMask = 0;
+        }
+        receivedMask |= (byte) (1 << side.ordinal());
+    }
+
+    private boolean receivedThisTick(Direction side) {
+        return receivedGameTime == parent.getLevel().getGameTime() && (receivedMask & (1 << side.ordinal())) != 0;
     }
 
     public IEnergyStorage createCapability(Direction side) {
@@ -84,7 +94,11 @@ public class EnergyDuctUnit extends DuctUnit<EnergyDuctUnit, EnergyGrid, IEnergy
             @Override
             public int receiveEnergy(int maxReceive, boolean simulate) {
                 if (grid == null) return 0;
-                return grid.receiveEnergy(maxReceive, simulate);
+                int received = grid.receiveEnergy(EnergyDuctUnit.this, side, maxReceive, simulate);
+                if (received > 0 && !simulate && side != null) {
+                    markReceived(side);
+                }
+                return received;
             }
 
             @Override

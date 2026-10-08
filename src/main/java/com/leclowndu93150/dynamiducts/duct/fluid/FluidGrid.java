@@ -11,6 +11,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
@@ -43,7 +44,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
     @Override
     public void removeBlock(FluidDuctUnit unit) {
-        if (!tank.isEmpty() && !unit.isBeingDestroyed()) {
+        if (!isTicking() && !tank.isEmpty() && !unit.isBeingDestroyed()) {
             FluidStack share = getNodeShare(unit);
             if (!share.isEmpty()) {
                 unit.setFluidForGrid(share);
@@ -100,6 +101,7 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
 
                     FluidStack toSend = tank.drain(available, IFluidHandler.FluidAction.SIMULATE);
                     if (toSend.isEmpty()) break;
+                    if (!acceptsOutput(node, dir, toSend)) continue;
 
                     int filled = target.fill(toSend, IFluidHandler.FluidAction.EXECUTE);
                     if (filled > 0) {
@@ -157,6 +159,26 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
         return filled;
     }
 
+    public int extractFrom(IFluidHandler source, int maxDrain, Predicate<FluidStack> filter) {
+        for (int i = 0; i < source.getTanks(); i++) {
+            FluidStack contained = source.getFluidInTank(i);
+            if (contained.isEmpty() || !filter.test(contained)) continue;
+            int moved = transferFrom(source, contained.copyWithAmount(maxDrain));
+            if (moved > 0) return moved;
+        }
+        return 0;
+    }
+
+    private int transferFrom(IFluidHandler source, FluidStack request) {
+        FluidStack simulated = source.drain(request, IFluidHandler.FluidAction.SIMULATE);
+        if (simulated.isEmpty()) return 0;
+        int accepted = fill(simulated, IFluidHandler.FluidAction.SIMULATE);
+        if (accepted <= 0) return 0;
+        FluidStack drained = source.drain(simulated.copyWithAmount(accepted), IFluidHandler.FluidAction.EXECUTE);
+        if (drained.isEmpty()) return 0;
+        return fill(drained, IFluidHandler.FluidAction.EXECUTE);
+    }
+
     public FluidStack getNodeShare(FluidDuctUnit unit) {
         if (tank.isEmpty()) return FluidStack.EMPTY;
         int totalDucts = nodeSet.size() + idleSet.size();
@@ -210,6 +232,14 @@ public class FluidGrid extends NetworkGrid<FluidDuctUnit> {
             return 5;
         }
         return 6;
+    }
+
+    private static boolean acceptsOutput(FluidDuctUnit unit, Direction side, FluidStack fluid) {
+        Attachment att = unit.getParent().getAttachment(side);
+        if (att instanceof ConnectionBase conn && conn.isFilter()) {
+            return conn.getFilter().matchesFluid(fluid);
+        }
+        return true;
     }
 
     private static boolean hasServoOnSide(FluidDuctUnit unit, Direction side) {

@@ -23,7 +23,7 @@ public class TransportDuctBlockEntity extends DuctBlockEntity {
     @Override
     protected void initDuctUnits() {
         if (tier == Tier.FRAME) return;
-        addDuctUnit(new TransportDuctUnit(this, tier == Tier.LONG_RANGE));
+        addDuctUnit(new TransportDuctUnit(this, tier));
     }
 
     public enum Tier {
@@ -31,6 +31,11 @@ public class TransportDuctBlockEntity extends DuctBlockEntity {
         LONG_RANGE,
         LINKING,
         FRAME;
+
+        public boolean canLinkTo(Tier other) {
+            if ((this == LONG_RANGE) == (other == LONG_RANGE)) return true;
+            return this == LINKING || other == LINKING;
+        }
 
         public TransportDuctBlockEntity createBlockEntity(BlockPos pos, BlockState state) {
             BlockEntityType<?> type = switch (this) {

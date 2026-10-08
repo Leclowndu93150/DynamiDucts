@@ -103,12 +103,19 @@ public class FilterLogic {
         for (ItemStack filter : filterStacks) {
             if (filter.isEmpty()) continue;
             FluidStack filterFluid = getFilterFluid(filter);
-            if (!filterFluid.isEmpty() && FluidStack.isSameFluidSameComponents(stack, filterFluid)) {
+            if (!filterFluid.isEmpty() && matchesFluidEntry(stack, filterFluid)) {
                 found = true;
                 break;
             }
         }
         return whitelist == found;
+    }
+
+    private boolean matchesFluidEntry(FluidStack stack, FluidStack filter) {
+        if (matchComponents) {
+            return FluidStack.isSameFluidSameComponents(stack, filter);
+        }
+        return FluidStack.isSameFluid(stack, filter);
     }
 
     private static FluidStack getFilterFluid(ItemStack filter) {
