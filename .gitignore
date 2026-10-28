@@ -13,7 +13,7 @@ out/
 # JIRA plugin
 atlassian-ide-plugin.xml
 sources
-src/generated
+**/src/generated
 # Compiled class file
 *.class
 

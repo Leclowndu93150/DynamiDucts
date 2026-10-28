@@ -1,21 +1,24 @@
-# v1.1.1
+# v1.2.0
+
+## Changes
+- Added support for Minecraft 26.1.2 (NeoForge). Immersive Engineering has no 26.1.2 release, so the Diesel Generator fix only applies to 1.21.1.
+- CodeChicken Lib is no longer required.
 
 ## Bug Fixes
-- Fixed fluid filters doing nothing. Whitelists and blacklists on fluid filters are now applied when fluid leaves the network, the same way item filters already worked.
-- Fixed fluid servos and retrievers ignoring their whitelist on machines with several tanks. They used to look only at the first fluid the machine offered and give up if it didn't match. Every tank is now checked against the filter.
-- Fixed the "Match Components" toggle being ignored for fluids.
-- Fixed fluid servos and retrievers being able to duplicate fluid when the source tank handed over less than it promised.
-- Fixed servos, retrievers, filters and relays being deleted when the duct they were on got broken. They now drop as items.
-- Fixed ducts stopping working when connected to multiblocks (Immersive Engineering coke ovens and blast furnaces, Create fluid tanks, etc.) until an attachment was broken and replaced. This happened because multiblocks reform when their chunk loads. Ducts now notice when a neighboring block's inventory, tank or energy storage appears, changes or goes away, and reconnect on their own.
-- Fixed fluxducts not connecting to Immersive Engineering multiblocks.
-- Fixed ducts at chunk borders continuing to push into machines in unloaded chunks, and not reconnecting when those chunks loaded again.
-- Fixed a single fluxduct duplicating energy (issue #12). A fluxduct touching more than one receiver could hand out more energy than it held, outputting its full transfer rate from a generator producing a fraction of that.
-- Fixed fluxducts pushing energy back into the generator that was feeding them.
-- Fixed fluxduct networks losing stored energy when two networks merged, and duplicating energy when part of a network unloaded and reloaded.
-- Fixed a single Cryo-Stabilized Fluxduct not transferring any energy (issue #11). Cryo-Stabilized Fluxducts also now accept energy pushed into them, so Mekanism cables and energy cubes set to push work with them.
-
-## Balance
-- Long-Range Viaducts now behave like in Thermal Dynamics 1.12 (issue #10):
-  - They only connect to other Long-Range Viaducts or Linking Viaducts.
-  - They can no longer be used as entrances or exits. Existing Long-Range entrances can be cleared with a wrench.
-  - They can't branch. A Long-Range Viaduct with more than two possible connections connects to nothing, so T and X junctions need a Linking Viaduct in between.
+- Fixed fluid retrievers filling the duct partway and then stalling without delivering anything. They could drain their own tank, and the fluid they pulled was pushed straight back into the tank it came from. Retrievers now skip tanks that have a retriever on them and send what they pull directly into their own tank.
+- Fixed fluxducts not connecting to the top of the Immersive Engineering Diesel Generator. The generator pushes power into the three blocks above its back row but reports no energy storage on that face, so ducts there never showed a connection.
+- Fixed round robin servos and retrievers sending far more items to some destinations than others. The rotation was shared by every servo on the network and advanced even when nothing was sent, and a destination that couldn't take the item passed its turn to the next one. Each servo and retriever now keeps its own rotation and continues from the destination it last used.
+- Fixed item routes being listed twice when a network mixed duct types with different path weights, which gave those destinations extra turns.
+- Fixed items being deleted when a machine pushed a stack into an itemduct that could only accept part of it.
+- Fixed fluxduct and fluiduct networks losing most of their stored energy or fluid when the world or chunk reloaded.
+- Fixed fluiduct networks losing fluid when two networks merged.
+- Fixed item retrievers deleting items when there was no route back to the retriever.
+- Fixed items traveling through itemducts being lost when the world closed or their chunk unloaded. They now continue on their route after loading. Items that were already in transit in a world saved with an older version are still lost.
+- Fixed the Information and Redstone Control tabs on servo, retriever and filter screens being able to open at the same time and overlap. Tabs now open and close when clicked, opening one closes the other, and the tab below moves down instead of being covered.
+- Fixed those tabs opening almost instantly at high frame rates. They now take the same time to open at any frame rate.
+- Fixed the Viaduct destination list scrollbar not being draggable.
+- Fixed Viaduct screens darkening the world behind them twice.
+- Fixed Viaduct textures being wrong after reloading resource packs.
+- Fixed duct models sometimes being built from two threads at the same time.
+- Fixed a crash when another mod inserted items into an itemduct without giving a side.
+- Added the missing name for the DynamiDucts entry in the Jade config.

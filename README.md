@@ -1,6 +1,6 @@
 # DynamiDucts
 
-A Minecraft NeoForge mod for 1.21.1 that brings back the Thermal Dynamics legacy duct system. Build pipe networks to transport items, fluids, energy, and even players.
+A Minecraft NeoForge mod for 1.21.1 and 26.1.2 that brings back the Thermal Dynamics legacy duct system. Build pipe networks to transport items, fluids, energy, and even players.
 
 ## Features
 
@@ -52,12 +52,14 @@ Art and texture assets derived from CoFH projects remain under **CC BY-NC-SA 4.0
 
 ## Building
 
+The project uses the [Prism](https://github.com/Leclowndu93150/Prism) Gradle plugin. Each Minecraft version lives in `versions/<version>/`. Gradle must run on JDK 25.
+
 ```
 ./gradlew build
+./gradlew :1.21.1:build
+./gradlew :26.1.2:runClient
 ```
 
 ## Dependencies
 
-- Minecraft 1.21.1
-- NeoForge 21.1+
-- CodeChicken Lib
+- Minecraft 1.21.1 with NeoForge 21.1+, or Minecraft 26.1.2 with NeoForge 26.1.2+

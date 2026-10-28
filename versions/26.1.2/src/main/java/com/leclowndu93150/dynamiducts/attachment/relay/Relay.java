@@ -1,0 +1,140 @@
+package com.leclowndu93150.dynamiducts.attachment.relay;
+
+import com.leclowndu93150.dynamiducts.DynamiDucts;
+import com.leclowndu93150.dynamiducts.blockentity.DuctBlockEntity;
+import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
+import com.leclowndu93150.dynamiducts.init.DDItems;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+public class Relay extends Attachment {
+
+    public static final Identifier ID = Identifier.fromNamespaceAndPath(DynamiDucts.MODID, "relay");
+
+    public static final int TYPE_REDSTONE_INPUT = 0;
+    public static final int TYPE_REDSTONE_OUTPUT = 1;
+    public static final int TYPE_COMPARATOR_INPUT = 2;
+
+    private int color;
+    private int type = TYPE_REDSTONE_INPUT;
+    private int invertMode;
+    private int threshold;
+    private int outputStrength;
+
+    public Relay(DuctBlockEntity parent, Direction side) {
+        super(parent, side);
+    }
+
+    @Override
+    public Identifier getId() {
+        return ID;
+    }
+
+    @Override
+    public boolean isNode() {
+        return true;
+    }
+
+    @Override
+    public ItemStack getDrop() {
+        return new ItemStack(DDItems.RELAY.get());
+    }
+
+    public boolean isInput() {
+        return type == TYPE_REDSTONE_INPUT || type == TYPE_COMPARATOR_INPUT;
+    }
+
+    public int getColor() {
+        return color;
+    }
+
+    public void setColor(int color) {
+        this.color = Math.max(0, Math.min(15, color));
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = Math.max(0, Math.min(2, type));
+    }
+
+    public int getInvertMode() {
+        return invertMode;
+    }
+
+    public void setInvertMode(int invertMode) {
+        this.invertMode = Math.max(0, Math.min(3, invertMode));
+    }
+
+    public int getThreshold() {
+        return threshold;
+    }
+
+    public void setThreshold(int threshold) {
+        this.threshold = Math.max(0, Math.min(15, threshold));
+    }
+
+    public int readInputSignal() {
+        Level level = parent.getLevel();
+        if (level == null) return 0;
+
+        BlockPos adjacent = parent.getBlockPos().relative(side);
+        int signal;
+
+        if (type == TYPE_COMPARATOR_INPUT) {
+            signal = level.getBlockState(adjacent).getAnalogOutputSignal(level, adjacent, side.getOpposite());
+        } else {
+            signal = level.getSignal(adjacent, side);
+        }
+
+        return applyInversion(signal);
+    }
+
+    public void outputSignal(int strength) {
+        int newStrength = applyInversion(strength);
+        if (newStrength != outputStrength) {
+            outputStrength = newStrength;
+            Level level = parent.getLevel();
+            if (level != null && !level.isClientSide()) {
+                level.updateNeighborsAt(parent.getBlockPos(), parent.getBlockState().getBlock());
+            }
+        }
+    }
+
+    public int getOutputStrength() {
+        return outputStrength;
+    }
+
+    private int applyInversion(int signal) {
+        return switch (invertMode) {
+            case 0 -> signal;
+            case 1 -> 15 - signal;
+            case 2 -> signal >= threshold ? 15 : 0;
+            case 3 -> signal >= threshold ? 0 : 15;
+            default -> signal;
+        };
+    }
+
+    @Override
+    protected void saveAdditional(ValueOutput output) {
+        output.putInt("Color", color);
+        output.putInt("Type", type);
+        output.putInt("InvertMode", invertMode);
+        output.putInt("Threshold", threshold);
+    }
+
+    @Override
+    protected void loadAdditional(ValueInput input) {
+        color = input.getIntOr("Color", 0);
+        type = input.getIntOr("Type", 0);
+        invertMode = input.getIntOr("InvertMode", 0);
+        threshold = input.getIntOr("Threshold", 0);
+    }
+}

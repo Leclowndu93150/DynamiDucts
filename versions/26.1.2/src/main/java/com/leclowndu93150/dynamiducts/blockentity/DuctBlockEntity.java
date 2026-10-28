@@ -1,0 +1,372 @@
+package com.leclowndu93150.dynamiducts.blockentity;
+
+import com.leclowndu93150.dynamiducts.block.DuctBlock;
+import com.leclowndu93150.dynamiducts.core.attachment.Attachment;
+import com.leclowndu93150.dynamiducts.core.attachment.AttachmentRegistry;
+import com.leclowndu93150.dynamiducts.core.attachment.ConnectionBase;
+import com.leclowndu93150.dynamiducts.core.duct.DuctToken;
+import com.leclowndu93150.dynamiducts.core.duct.DuctUnit;
+import com.leclowndu93150.dynamiducts.core.network.ConnectionType;
+import com.leclowndu93150.dynamiducts.core.network.NetworkManager;
+import com.leclowndu93150.dynamiducts.duct.fluid.FluidDuctUnit;
+import com.leclowndu93150.dynamiducts.duct.item.ItemDuctUnit;
+import com.mojang.serialization.Codec;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+
+import java.nio.ByteBuffer;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Optional;
+
+public abstract class DuctBlockEntity extends BlockEntity {
+
+    protected final Map<DuctToken, DuctUnit<?, ?, ?>> ductUnits = new EnumMap<>(DuctToken.class);
+    protected final ConnectionType[] connectionTypes = new ConnectionType[6];
+    protected final Attachment[] attachments = new Attachment[6];
+    private boolean neighborRefreshPending;
+
+    protected DuctBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        super(type, pos, state);
+        for (int i = 0; i < 6; i++) {
+            connectionTypes[i] = ConnectionType.NORMAL;
+        }
+    }
+
+    protected abstract void initDuctUnits();
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, DuctBlockEntity be) {
+        if (be.neighborRefreshPending) {
+            be.neighborRefreshPending = false;
+            be.refreshNeighborCaches();
+        }
+        for (Attachment att : be.attachments) {
+            if (att != null) {
+                att.tick();
+            }
+        }
+    }
+
+    public static void clientTick(Level level, BlockPos pos, BlockState state, DuctBlockEntity be) {
+        for (DuctUnit<?, ?, ?> unit : be.ductUnits.values()) {
+            if (unit instanceof ItemDuctUnit itemUnit) {
+                itemUnit.tickClientTravelingItems();
+            }
+        }
+    }
+
+    protected void addDuctUnit(DuctUnit<?, ?, ?> unit) {
+        ductUnits.put(unit.getToken(), unit);
+    }
+
+    public DuctUnit<?, ?, ?> getDuctUnit(DuctToken token) {
+        return ductUnits.get(token);
+    }
+
+    public Map<DuctToken, DuctUnit<?, ?, ?>> getDuctUnits() {
+        return ductUnits;
+    }
+
+    public ConnectionType getConnectionType(Direction side) {
+        return connectionTypes[side.ordinal()];
+    }
+
+    public void setConnectionType(Direction side, ConnectionType type) {
+        connectionTypes[side.ordinal()] = type;
+        onNeighborChanged();
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            refreshVisualState();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public Attachment[] getAttachments() {
+        return attachments;
+    }
+
+    public Attachment getAttachment(Direction side) {
+        return attachments[side.ordinal()];
+    }
+
+    public void setAttachment(Direction side, Attachment attachment) {
+        attachments[side.ordinal()] = attachment;
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            onNeighborChanged();
+            refreshVisualState();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public void removeAttachment(Direction side) {
+        attachments[side.ordinal()] = null;
+        setChanged();
+        if (level != null && !level.isClientSide()) {
+            onNeighborChanged();
+            refreshVisualState();
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.clearTileWatchers();
+            unit.updateCaches();
+        }
+        if (level instanceof ServerLevel serverLevel) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+    }
+
+    public void onPlaced() {
+        if (level instanceof ServerLevel serverLevel) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+    }
+
+    public void onBroken() {
+        dropAttachments();
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            if (unit instanceof ItemDuctUnit itemUnit) {
+                itemUnit.dropAllItems();
+            }
+            if (unit instanceof FluidDuctUnit fluidUnit) {
+                fluidUnit.markBeingDestroyed();
+            }
+            unit.invalidate();
+        }
+    }
+
+    private void dropAttachments() {
+        if (level == null) return;
+        for (int i = 0; i < attachments.length; i++) {
+            if (attachments[i] == null) continue;
+            ItemStack drop = attachments[i].getDrop();
+            attachments[i] = null;
+            if (!drop.isEmpty()) {
+                Block.popResource(level, worldPosition, drop);
+            }
+        }
+    }
+
+    public void requestNeighborRefresh() {
+        neighborRefreshPending = true;
+    }
+
+    private void refreshNeighborCaches() {
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            if (unit.refreshCaches() || unit.getGrid() == null) {
+                unit.invalidate();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+        }
+        refreshVisualState();
+    }
+
+    public void onNeighborChanged() {
+        if (level instanceof ServerLevel serverLevel) {
+            boolean connectionTypesChanged = normalizeDisconnectedBlockedSides();
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.invalidate();
+                unit.updateCaches();
+                NetworkManager.get(serverLevel).scheduleFormation(unit);
+            }
+            boolean powered = level.hasNeighborSignal(worldPosition);
+            boolean powerStateChanged = false;
+            for (Attachment att : attachments) {
+                if (att instanceof ConnectionBase conn && conn.updatePowerState(powered)) {
+                    powerStateChanged = true;
+                }
+            }
+            level.invalidateCapabilities(worldPosition);
+            if (connectionTypesChanged) {
+                setChanged();
+                refreshVisualState();
+            }
+            if (powerStateChanged) {
+                setChanged();
+                level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            }
+        }
+    }
+
+    private boolean normalizeDisconnectedBlockedSides() {
+        if (level == null) {
+            return false;
+        }
+
+        boolean changed = false;
+        for (Direction side : Direction.values()) {
+            if (connectionTypes[side.ordinal()] != ConnectionType.BLOCKED) {
+                continue;
+            }
+
+            BlockPos neighborPos = worldPosition.relative(side);
+            if (!level.isLoaded(neighborPos)) {
+                continue;
+            }
+
+            BlockEntity neighbor = level.getBlockEntity(neighborPos);
+            if (neighbor == null) {
+                connectionTypes[side.ordinal()] = ConnectionType.NORMAL;
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private void refreshVisualState() {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!(state.getBlock() instanceof DuctBlock ductBlock)) {
+            return;
+        }
+        BlockState updatedState = ductBlock.updateVisualConnections(level, worldPosition, state);
+        if (updatedState != state) {
+            level.setBlock(worldPosition, updatedState, Block.UPDATE_CLIENTS);
+            ductBlock.onConnectionsChanged(level, worldPosition);
+        }
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        onBroken();
+        super.preRemoveSideEffects(pos, state);
+    }
+
+    @Override
+    public void setRemoved() {
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.invalidate();
+        }
+        super.setRemoved();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+            unit.invalidate();
+        }
+        super.onChunkUnloaded();
+    }
+
+    @Override
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+
+        byte[] connections = new byte[6];
+        for (int i = 0; i < 6; i++) {
+            connections[i] = (byte) connectionTypes[i].ordinal();
+        }
+        output.store("Connections", Codec.BYTE_BUFFER, ByteBuffer.wrap(connections));
+
+        for (var entry : ductUnits.entrySet()) {
+            String key = "Unit_" + entry.getKey().name();
+            ValueOutput unitOutput = output.child(key);
+            entry.getValue().saveAdditional(unitOutput);
+            if (unitOutput.isEmpty()) {
+                output.discard(key);
+            }
+        }
+
+        ValueOutput.ValueOutputList attachmentList = output.childrenList("Attachments");
+        for (int i = 0; i < 6; i++) {
+            ValueOutput attachmentOutput = attachmentList.addChild();
+            if (attachments[i] != null) {
+                attachments[i].save(attachmentOutput);
+            }
+        }
+    }
+
+    @Override
+    protected void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+
+        input.read("Connections", Codec.BYTE_BUFFER).ifPresent(connections -> {
+            for (int i = 0; i < Math.min(6, connections.remaining()); i++) {
+                connectionTypes[i] = ConnectionType.values()[connections.get(i)];
+            }
+        });
+
+        for (var entry : ductUnits.entrySet()) {
+            input.child("Unit_" + entry.getKey().name()).ifPresent(entry.getValue()::loadAdditional);
+        }
+
+        Optional<ValueInput.ValueInputList> attachmentList = input.childrenList("Attachments");
+        if (attachmentList.isPresent()) {
+            int i = 0;
+            for (ValueInput attachmentInput : attachmentList.get()) {
+                if (i >= 6) break;
+                Optional<String> id = attachmentInput.getString("Id");
+                if (id.isEmpty()) {
+                    attachments[i] = null;
+                } else {
+                    attachments[i] = AttachmentRegistry.create(Identifier.parse(id.get()), this, Direction.values()[i], attachmentInput);
+                    if (attachments[i] != null) {
+                        attachments[i].load(attachmentInput);
+                    }
+                }
+                i++;
+            }
+        }
+    }
+
+    @Override
+    public void handleUpdateTag(ValueInput input) {
+        super.handleUpdateTag(input);
+        if (level != null && level.isClientSide()) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
+            }
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ValueInput input) {
+        super.onDataPacket(net, input);
+        if (level != null && level.isClientSide()) {
+            for (DuctUnit<?, ?, ?> unit : ductUnits.values()) {
+                unit.updateCaches();
+            }
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveCustomOnly(registries);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+}
